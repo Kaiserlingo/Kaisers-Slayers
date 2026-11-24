@@ -11,10 +11,12 @@ Diese Datei erklärt, wo was liegt und wie man neue Funktionen hinzufügt.
 | `slayer/SlayerType.java` | Alle Slayer: Boss-Name, Kosten, XP, Minibosse, Standardfarbe. |
 | `world/WorldScanner.java` | Schaut sich die Entities an: eigener Boss, Minibosse, Slayer-spezifische Dinge. Befüllt `Highlights`, `Waypoints` und `BossState`. |
 | `world/NameParser.java` | Liest Namensschilder (HP, Hits, Attunement, Timer, Pillar). **Testbar.** |
-| `mixin/` | Glow-Umriss für markierte Entities. Die Mixins sind optional (`defaultRequire: 0`), ein Fehler darin bringt das Spiel nicht zum Absturz. |
-| `hud/` | `SlayerHud` (Info-Fenster), `BossPanelHud` (Boss-Infos + Waypoint-Pfeile), `AlertOverlay` (große Einblendungen) |
-| `gambling/` | Gambling-Animation und Loot-Listen |
-| `gui/` | `/ks`-Menü. `Option` = ein Button, `OptionsScreen` baut daraus Seiten. |
+| `mixin/` | Glow-Umriss, Boss-Timer-Namensschild, Zugriff für Lichtstrahlen. Injects sind optional (`defaultRequire: 0`). |
+| `render/` | `WorldRender` (Lichtstrahlen), `BossNametag` (Text direkt am Boss) |
+| `hud/` | `SlayerHud`, `ProfitHud`, `BossPanelHud` (HP-Leiste, Boss-Infos, Waypoint-Pfeile), `AlertOverlay` |
+| `gambling/` | Vollbild-Gambling (`GamblingAnimation`), Loot-Listen, Item-Icons |
+| `gui/` | `KsScreen` (Menü), `Menus` (**alle Einstellungen**), `Option` (Schalter/Auswahl/Regler/Farbe/Knopf), `HudEditorScreen`, `Ui` (Design) |
+| `DemoData.java` | Beispieldaten für `/ks test` und den Spieltest |
 | `config/` | `ModConfig` (JSON in `config/kaisers_slayers.json`), `SlayerFeature` (alle Features je Slayer) |
 | `price/PriceService.java` | Bazaar-Preise (Hypixel API) + Lowest BIN |
 | `command/SlayerCommands.java` | `/ks …` |
@@ -31,7 +33,13 @@ Diese Datei erklärt, wo was liegt und wie man neue Funktionen hinzufügt.
 ## Neue allgemeine Einstellung
 
 1. Feld in `config/ModConfig.java` anlegen (mit Standardwert).
-2. In `gui/MainMenuScreen.java` → `Menus` als `Option.toggle(...)` oder `Option.cycle(...)` eintragen.
+2. In `gui/Menus.java` in der passenden Kategorie eintragen: `Option.toggle`, `Option.choice`, `Option.slider`, `Option.color` oder `Option.action`.
+
+## Testen
+
+- `./gradlew build` – kompiliert und führt die JUnit-Tests aus (Tracker, Parser, Profit, Gambling-Logik, Mixin-Ziele).
+- `./gradlew runClientGameTest` – startet das echte Spiel und macht Screenshots (`src/gametest/...`). In GitHub läuft das als **Visual Test**; die Screenshots stehen im Log.
+- Im Spiel: `/ks test` zeigt alle HUDs mit Beispieldaten, `/ks gamble <stil>` spielt die Animation ab, `/ks debug` schreibt alle Namensschilder in eine Datei.
 
 ## Neuer Slayer (z. B. wenn Hypixel einen hinzufügt)
 

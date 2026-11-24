@@ -2,7 +2,7 @@ name: Visual Test
 
 on:
   push:
-    branches: ["v2-dev"]
+    branches: ["main", "v2-dev"]
   workflow_dispatch:
 
 jobs:
@@ -15,13 +15,6 @@ jobs:
           distribution: temurin
           java-version: 25
       - uses: gradle/actions/setup-gradle@v4
-      - name: Gametest-API anzeigen
-        run: |
-          chmod +x ./gradlew
-          ./gradlew compileJava -q || true
-          J=$(find ~/.gradle -name "fabric-client-gametest-api-v1*.jar" | grep -v sources | head -1)
-          echo "JAR $J"
-          for c in $(unzip -l "$J" | grep -o "net/fabricmc/fabric/api/client/gametest/v1/[A-Za-z/]*\.class" | sed 's/\.class//;s#/#.#g'); do javap -cp "$J" "$c"; done
       - name: Spiel starten und Screenshots machen
         run: |
           chmod +x ./gradlew

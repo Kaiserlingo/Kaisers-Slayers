@@ -3,54 +3,46 @@
 Slayer-Mod für **Hypixel SkyBlock** · Minecraft **26.2** · **Fabric**
 
 ## Menü: `/ks`
-`/ks` öffnet das Menü. Jede Option hat einen Tooltip (Maus drüberhalten).
+Eigenes Menü mit Seitenleiste, Suche, Schaltern, Reglern und Farbwahl:
+- **Übersicht** – alle Slayer auf einen Blick (Level, Kills, Rekord, Gesamt-Profit, RNG Meter)
+- **Alerts** – Boss spawnt / spawnt gleich, Minibosse, Zeitlimit, Quest failed, Drops, Alert-Größe
+- **Welt & Highlights** – Lichtstrahlen (Farbe wählbar), Miniboss-Farbe, fremde Bosse markieren, Drops am Boden
+- **Tracker** – Kill-/Quest-Zeiten im Chat, Level-Prognose, Debug-Datei
+- **Profit-Tracker** – Session/Gesamt, Sack-Drops, Preis-Modus, Aatrox-Rabatt, Item-Tabelle (Klick = ausblenden)
+- **HUD** – HUD-Editor (Drag & Drop + Mausrad), Boss-Panel, Waypoint-Pfeil, Akzentfarbe
+- **Gambling** – Animation, Dauer, Effekte, Farben, Vorschau
+- **Ein Menü pro Slayer** mit allgemeinen und eigenen Funktionen
 
-**Allgemein**
-- **Tracker & Profit:** Profit-Tracker (Live-Bazaar-Preise), Drop-Tracker, Level-Prognose, Kill-Zeit im Chat, Preis-Modus
-- **Alerts:** Boss-Spawn-Alert, *Boss spawnt gleich* (ab 75–95 % Fortschritt), Miniboss-Alert + kurzzeitiger **Waypoint-Pfeil**, Boss-Zeitwarnung, Quest-Failed, Drop-Alert, Sounds
-- **HUD:** Position, Größe, Hintergrund, Waypoint-Pfeil, Boss-Panel
-- **Gambling-Animation:** Stil, Dauer, Auslöser, Jackpot-Grenze, Größe, Sounds, Vorschau
-- **Session zurücksetzen**
-
-**Ein Menü pro Slayer.** Für jeden Slayer gibt es Tracking, Boss-Highlight (Farbe wählbar), Boss-Info-Panel, Miniboss-Highlight, Gambling an/aus, Low-HP-Alert und Gambling-Vorschau. Dazu kommen diese eigenen Funktionen:
+## Für jeden Slayer
+Boss-Highlight (Farbe wählbar) · **Timer direkt am Boss** (Zeit, HP, Phase als Schild in der Welt) · Boss-HP-Leiste · Boss-Info-Panel · Miniboss-Highlight + **Lichtstrahl** · Drops am Boden leuchten · Low-HP-Alert · Gambling an/aus
 
 | Slayer | Eigene Funktionen |
 |---|---|
-| Revenant Horror | TNT-Warnung (Atoned Horror T5), TNT-Highlight, Heal-Erkennung |
-| Tarantula Broodfather | Sprung-Warnung, Brood-Zähler, Brood-Highlight |
-| Sven Packmaster | Pup-Highlight, Pup-Zähler (Boss unverwundbar), Pup-Alert |
-| Voidgloom Seraph | **Beacon-Overlay** (in der Hand / im Flug / platziert + Pfeil + Timer), Beacon-Alert, **Skull-Overlay**, Skull-Zähler, Hits-Anzeige, Laser-Timer, Phasen-Farbe |
-| Inferno Demonlord | **Dagger-Anzeige** (benötigte Attunement + richtiger Dagger, Warnung bei falschem), Attunement-Farbe, Fire-Pillar-Timer + Alert, Demon-Highlight |
-| Riftstalker Bloodfiend | Steak-Stake-Alert (≤ 20 % HP), Twinclaws-Alert, Twinclaws-Timer, Ichor/Spring-Highlight |
+| Revenant Horror | TNT-Warnung + Highlight (Atoned Horror), Heal-Erkennung |
+| Tarantula Broodfather | Sprung-Warnung, Brood-Zähler + Highlight, Cocoon-Alert (Conjoined Brood) |
+| Sven Packmaster | Pup-Highlight, Pup-Zähler, Pup-Alert |
+| Voidgloom Seraph | **Beacon-Overlay** (Hand → Wurf/Yang Glyph → platziert, mit Strahl, Pfeil und 5-s-Countdown), **Skull-Overlay**, Hits, Laser-Timer (8 s), Phasen-Farbe |
+| Inferno Demonlord | **Dagger-Anzeige** (richtige Attunement/Dagger, Warnung bei falschem), IMMUNE-Warnung, Fire-Pillar-Timer + Alert, Demons |
+| Riftstalker Bloodfiend | Steak-Stake-Alert (҉ / ≤ 20 %), Holy-Ice/Twinclaws-Alert + Timer, Mania-Alert (grüner Boden), Ichor/Spring-Highlight |
+
+## Profit-Tracker
+Eigene Karte mit allen Drops (Chat **und** `[Sacks]`), Live-Bazaar-Preisen (Lowest BIN für AH-Items), Quest-Kosten, **Gewinn**, Gewinn/h und Gewinn pro Boss – getrennt nach Slayer, umschaltbar Session ↔ Gesamt (`/ks profit`).
 
 ## Gambling-Animation
-Wenn du einen Boss tötest, läuft eine Walze (Kisten-Öffnung) oder eine Slot-Machine mit 3 Walzen. Die Animation **landet immer auf deinem echten besten Drop** dieses Kills. Kommt kein seltener Drop, zeigt sie „nur Common Drops“. Der Jackpot-Effekt kommt ab INSANE DROP oder ab einem einstellbaren Coin-Wert.
+Vollbild beim Boss-Kill: **Kisten-Öffnung, Slot-Machine, Glücksrad oder Karten** (oder zufällig). Ab dem Kill sind HUD, Chat, Titel und Scoreboard ausgeblendet – kein Spoiler. Landet immer auf deinem echten besten Drop, mit Lichtstrahlen, Partikeln, Konfetti beim Jackpot, Blitz und Wackeln (alles einstellbar). Überspringen mit **U** (änderbar in *Steuerung*).
 
-**Eigene Items** für die Walze kannst du in `config/kaisers_slayers.json` unter `gamblingExtraItems` eintragen. Format: `"Itemname|Stufe"`, Stufe 0 bis 5, zum Beispiel:
-```json
-"gamblingExtraItems": { "zombie": ["Warden Heart|5", "Mein Lieblingsitem|3"] }
-```
+Eigene Items für die Walzen: `config/kaisers_slayers.json` → `gamblingExtraItems`, z. B. `"zombie": ["Warden Heart|5"]` (Stufe 0–5).
 
 ## Befehle
-`/ks` Menü · `/ks help` alle Befehle · `/ks stats` · `/ks lifetime` · `/ks reset` · `/ks hud pos <x> <y>` · `/ks hud scale <0.5–3>` · `/ks toggle <…>` · `/ks prices` · `/ks test`
+`/ks` Menü · `/ks hud` HUD-Editor · `/ks profit` Session/Gesamt · `/ks gamble <case|slots|wheel|cards>` Animation testen · `/ks test` Demo-Daten (HUDs außerhalb von Hypixel ansehen) · `/ks debug` Debug-Datei · `/ks lifetime` · `/ks reset` · `/ks help`
+
+## Etwas funktioniert nicht?
+`/ks debug` neben dem Boss ausführen. Die Datei `config/kaisers_slayers_debug.txt` enthält alle Namensschilder in der Nähe – damit lässt sich die Erkennung genau anpassen.
 
 Die Mod zeigt nur Informationen an. Sie klickt, bewegt und automatisiert nichts.
 
-## Gut zu wissen
-- **Glow-Highlights** nutzen den Minecraft-Glow-Umriss. Sollte das Highlight einmal nicht funktionieren, stürzt das Spiel trotzdem nicht ab: Die Mixins sind optional eingestellt.
-- **Waypoints** werden als Pfeil mit Entfernung oben in der Bildschirmmitte angezeigt, nicht als Lichtstrahl in der Welt.
-- Die Erkennung von Namensschildern (Pillar, Twinclaws, Skulls, Ichor) ist nach dem Vorbild bestehender Mods gebaut. Sie muss im Spiel geprüft werden, weil Hypixel Texte ändern kann.
+## Bauen & Installieren
+Jeder Push baut automatisch (GitHub → **Actions** → Artifacts). Tag `v2.0.0` pushen → Release mit `.jar`.
+Installieren: Fabric Loader 26.2 + **Fabric API** + `kaisers-slayers-2.0.0.jar` in den `mods`-Ordner.
 
-## Mod bauen
-**GitHub (empfohlen):**
-1. Neues Repository anlegen.
-2. Alle Dateien hochladen, auch die Ordner `.github` und `gradle`.
-3. Reiter **Actions** öffnen. Wenn der Build fertig ist, unter **Artifacts** die `.jar` herunterladen.
-
-**Lokal (Windows):**
-1. JDK 25 installieren.
-2. `gradlew.bat build` ausführen.
-3. Die Mod liegt in `build\libs\`.
-
-## Installieren
-Fabric Loader für 26.2 installieren. Dann **Fabric API** und `kaisers-slayers-1.1.0.jar` in den `mods`-Ordner legen.
+Der **Visual Test** (Actions) startet das echte Spiel, lädt eine Welt und macht Screenshots von HUD, Menü, Strahlen, Boss-Timer und allen Gambling-Animationen.
