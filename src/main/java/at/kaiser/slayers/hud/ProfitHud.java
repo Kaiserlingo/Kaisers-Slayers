@@ -121,7 +121,7 @@ public final class ProfitHud {
 			String val = switch (r.source()) {
 				case BAZAAR -> "§6" + TextUtil.formatCoins(r.value());
 				case AUCTION -> "§e" + TextUtil.formatCoins(r.value());
-				case UNKNOWN -> "§8?";
+				case UNKNOWN -> "§8–";
 			};
 			int maxName = w - 18 - font.width(val) - 6;
 			g.text(font, fit(font, name, maxName), 12, y, 0xFFFFFFFF, true);

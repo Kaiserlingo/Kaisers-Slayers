@@ -88,7 +88,7 @@ public final class GamblingAnimation {
 	/** Vom Tracker-Listener beim Kill: ab jetzt HUD/Chat ausblenden und Drops sammeln. */
 	public static void onKill(SlayerType t, int bossTier, long now) {
 		ModConfig cfg = KaisersSlayers.config();
-		if (!cfg.gamblingEnabled || t == null || !cfg.feature(t, SlayerFeature.GAMBLING)) return;
+		if (!cfg.gamblingEnabled || t == null || !cfg.feature(t, SlayerFeature.GAMBLING) || at.kaiser.slayers.DemoData.loading) return;
 		type = t;
 		tier = bossTier;
 		preview = false;
@@ -333,8 +333,17 @@ public final class GamblingAnimation {
 		// Lichtstrahlen
 		float rayAngle = (now % 20_000) / 20_000f * (float) (Math.PI * 2);
 		int rayColor = stage == Stage.REVEAL && !onlyCommon ? rarity : 0xFF000000 | accent;
-		int rayAlpha = (int) ((stage == Stage.REVEAL ? (jackpot ? 70 : 45) : 18) * alpha);
-		rays(g, sw / 2f, sh * 0.45f, Math.max(sw, sh), rayAngle, Ui.argb(rayColor, rayAlpha), stage == Stage.REVEAL ? 16 : 10);
+		int rayAlpha = (int) ((stage == Stage.REVEAL ? (jackpot ? 34 : 22) : 9) * alpha);
+		rays(g, sw / 2f, sh * 0.55f, Math.max(sw, sh), rayAngle, Ui.argb(rayColor, rayAlpha), stage == Stage.REVEAL ? 14 : 10);
+		// Vignette (dunkle Ränder)
+		int vig = (int) (200 * alpha);
+		g.fillGradient(0, 0, sw, sh / 5, Ui.argb(0x000000, vig), 0x00000000);
+		g.fillGradient(0, sh - sh / 5, sw, sh, 0x00000000, Ui.argb(0x000000, vig));
+		for (int i = 0; i < 12; i++) {
+			int a = (int) (vig * (1 - i / 12f) * 0.8f);
+			g.fill(i * 3, 0, i * 3 + 3, sh, Ui.argb(0x000000, a));
+			g.fill(sw - i * 3 - 3, 0, sw - i * 3, sh, Ui.argb(0x000000, a));
+		}
 
 		// Wackeln
 		g.pose().pushMatrix();
@@ -345,8 +354,8 @@ public final class GamblingAnimation {
 
 		// Kopfzeile
 		String head = type != null ? type.color + "§l" + type.bossName.toUpperCase(Locale.ROOT) + " " + TextUtil.toRoman(tier) : "";
-		Ui.centered(g, mc.font, "§8KAISER'S SLAYERS", sw / 2f, sh * 0.07f, 1.0f, Ui.argb(0xFFFFFF, (int) (255 * alpha)), false);
-		Ui.centered(g, mc.font, head, sw / 2f, sh * 0.07f + 11, 1.5f, Ui.argb(0xFFFFFF, (int) (255 * alpha)), true);
+		Ui.centered(g, mc.font, "§8KAISER'S SLAYERS · DROP ROULETTE", sw / 2f, sh * 0.04f, 0.75f, Ui.argb(0xFFFFFF, (int) (255 * alpha)), false);
+		Ui.centered(g, mc.font, head, sw / 2f, sh * 0.04f + 9, 1.5f, Ui.argb(0xFFFFFF, (int) (255 * alpha)), true);
 
 		switch (stage) {
 			case SUSPENSE -> renderSuspense(g, mc.font, sw, sh, now, accent, alpha);
@@ -375,7 +384,7 @@ public final class GamblingAnimation {
 	}
 
 	private static void renderSuspense(GuiGraphicsExtractor g, Font font, int sw, int sh, long now, int accent, float alpha) {
-		float cx = sw / 2f, cy = sh * 0.45f;
+		float cx = sw / 2f, cy = sh * 0.5f;
 		// drehender Lade-Ring
 		for (int i = 0; i < 12; i++) {
 			double a = i * Math.PI / 6 + now / 180.0;
@@ -401,7 +410,7 @@ public final class GamblingAnimation {
 
 	private static void renderCase(GuiGraphicsExtractor g, Font font, int sw, int sh, double p, boolean settled) {
 		int cardW = 70, cardH = 92, gap = 8, step = cardW + gap;
-		int cx = sw / 2, cy = (int) (sh * 0.45f);
+		int cx = sw / 2, cy = (int) (sh * 0.53f);
 		int half = Math.min(sw / 2 - 20, 4 * step);
 		int top = cy - cardH / 2;
 		double pos = (TARGET + jitter) * step * ease(p);
@@ -462,7 +471,7 @@ public final class GamblingAnimation {
 	private static void renderSlots(GuiGraphicsExtractor g, Font font, int sw, int sh, long t, boolean settled) {
 		int colW = 96, cellH = 34, gap = 10;
 		int totalW = colW * 3 + gap * 2;
-		int left = sw / 2 - totalW / 2, cy = (int) (sh * 0.45f), top = cy - cellH * 3 / 2;
+		int left = sw / 2 - totalW / 2, cy = (int) (sh * 0.55f), top = cy - cellH * 3 / 2;
 		double[] stops = {0.55, 0.78, 1.0};
 		int gold = 0xFF000000 | KaisersSlayers.config().gamblingAccent;
 
@@ -523,8 +532,8 @@ public final class GamblingAnimation {
 	// ---------------------------------------------------------------- WHEEL
 
 	private static void renderWheel(GuiGraphicsExtractor g, Font font, int sw, int sh, double p, boolean settled) {
-		float cx = sw / 2f, cy = sh * 0.47f;
-		float r = Math.min(sh * 0.30f, 110);
+		float cx = sw / 2f, cy = sh * 0.57f;
+		float r = Math.min(sh * 0.27f, 110);
 		double total = wheelAngle(wheelTarget, WHEEL_SEGMENTS, 6, jitter);
 		double angle = total * ease(p);
 		double seg = 360.0 / WHEEL_SEGMENTS;
@@ -591,7 +600,7 @@ public final class GamblingAnimation {
 		int cardW = 64, cardH = 90, gap = 12;
 		int totalW = CARD_COUNT * cardW + (CARD_COUNT - 1) * gap;
 		int left = sw / 2 - totalW / 2;
-		float cy = sh * 0.45f;
+		float cy = sh * 0.55f;
 		// Reihenfolge: außen zuerst, die mittlere Karte (Ergebnis) zuletzt und langsam
 		int[] order = {0, 4, 1, 3, 2};
 		for (int k = 0; k < CARD_COUNT; k++) {
@@ -630,7 +639,7 @@ public final class GamblingAnimation {
 		ModConfig cfg = KaisersSlayers.config();
 		int color = LootPool.tierColor(result.tier());
 		float pop = t < 250 ? 0.6f + 0.5f * (t / 250f) : (t < 400 ? 1.1f - 0.1f * ((t - 250) / 150f) : 1.0f);
-		float cx = sw / 2f, cy = sh * 0.45f;
+		float cx = sw / 2f, cy = sh * 0.55f;
 		float pulse = 1f + (float) Math.sin(t / 140.0) * (jackpot ? 0.04f : 0.015f);
 
 		g.pose().pushMatrix();
@@ -658,7 +667,7 @@ public final class GamblingAnimation {
 
 		if (jackpot) {
 			String jp = (t / 150 % 2 == 0 ? "§6§l" : "§e§l") + "★ JACKPOT ★";
-			Ui.centered(g, font, jp, cx, cy - 92, 3.0f + (float) Math.sin(t / 120.0) * 0.15f, Ui.argb(0xFFFFFF, (int) (255 * alpha)), true);
+			Ui.centered(g, font, jp, cx, cy - 96, 2.5f + (float) Math.sin(t / 120.0) * 0.15f, Ui.argb(0xFFFFFF, (int) (255 * alpha)), true);
 		} else if (onlyCommon) {
 			Ui.centered(g, font, "§7Nur Common Drops – nächstes Mal!", cx, cy + 78, 1.0f, Ui.argb(0xFFFFFF, (int) (255 * alpha)), true);
 		}
@@ -679,7 +688,7 @@ public final class GamblingAnimation {
 
 	private static void burst(int count, int color) {
 		Minecraft mc = Minecraft.getInstance();
-		float cx = mc.getWindow().getGuiScaledWidth() / 2f, cy = mc.getWindow().getGuiScaledHeight() * 0.45f;
+		float cx = mc.getWindow().getGuiScaledWidth() / 2f, cy = mc.getWindow().getGuiScaledHeight() * 0.55f;
 		for (int i = 0; i < count; i++) {
 			Particle p = new Particle();
 			double a = RANDOM.nextDouble() * Math.PI * 2;

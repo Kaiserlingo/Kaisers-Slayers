@@ -137,8 +137,8 @@ public class HudEditorScreen extends Screen {
 	public boolean keyPressed(KeyEvent e) {
 		if (e.key() == 82) { // R
 			ModConfig cfg = KaisersSlayers.config();
-			cfg.slayerHud = new ModConfig.HudPos(0.005f, 0.08f);
-			cfg.profitHud = new ModConfig.HudPos(0.005f, 0.42f);
+			cfg.slayerHud = new ModConfig.HudPos(0.005f, 0.06f);
+			cfg.profitHud = new ModConfig.HudPos(0.005f, 0.55f);
 			cfg.save();
 			return true;
 		}

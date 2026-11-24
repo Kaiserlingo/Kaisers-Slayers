@@ -84,8 +84,8 @@ public class ModConfig {
 	public int dropGlowSeconds = 20;
 
 	// ================= HUD =================
-	public HudPos slayerHud = new HudPos(0.005f, 0.08f);
-	public HudPos profitHud = new HudPos(0.005f, 0.42f);
+	public HudPos slayerHud = new HudPos(0.005f, 0.06f);
+	public HudPos profitHud = new HudPos(0.005f, 0.55f);
 	public boolean hudBackground = true;
 	public boolean hudOnlyWhenActive = false;
 	public boolean waypointArrow = true;
@@ -167,8 +167,8 @@ public class ModConfig {
 		if (gamblingExtraItems == null) gamblingExtraItems = new LinkedHashMap<>();
 		for (SlayerType t : SlayerType.values()) gamblingExtraItems.computeIfAbsent(t.key(), k -> new ArrayList<>());
 		if (hiddenItems == null) hiddenItems = new ArrayList<>();
-		if (slayerHud == null) slayerHud = new HudPos(0.005f, 0.08f);
-		if (profitHud == null) profitHud = new HudPos(0.005f, 0.42f);
+		if (slayerHud == null) slayerHud = new HudPos(0.005f, 0.06f);
+		if (profitHud == null) profitHud = new HudPos(0.005f, 0.55f);
 		if (gamblingStyle == null) gamblingStyle = "CASE";
 		if (gamblingTrigger == null) gamblingTrigger = "ALWAYS";
 		if (profitMode == null) profitMode = "SESSION";

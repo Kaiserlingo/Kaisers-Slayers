@@ -16,7 +16,18 @@ import java.util.Map;
 public final class DemoData {
 	private DemoData() {}
 
+	public static boolean loading;
+
 	public static void load() {
+		loading = true;
+		try {
+			fill();
+		} finally {
+			loading = false;
+		}
+	}
+
+	private static void fill() {
 		SlayerTracker t = KaisersSlayers.tracker();
 		long now = System.currentTimeMillis();
 		List<String> board = new ArrayList<>(List.of("Slayer Quest", "Voidgloom Seraph IV", "(1,200/1,500) Combat XP"));

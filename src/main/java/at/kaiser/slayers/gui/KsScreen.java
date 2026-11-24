@@ -28,12 +28,14 @@ public class KsScreen extends Screen {
 	private static final int SIDEBAR_W = 122;
 	private static final int HEADER_H = 34;
 	private static final int FOOTER_H = 26;
-	private static final int ROW_H = 30;
+	private static final int ROW_H = 27;
+	private static final int SIDE_ROW = 16;
 	private static final int HEADER_ROW_H = 18;
 	private static int lastCategory = 0;
 
 	private int category = lastCategory;
 	private double scroll, scrollTarget;
+	private double sideScroll;
 	private String search = "";
 	private boolean searchFocused;
 	private Option.Slider dragging;
@@ -50,10 +52,12 @@ public class KsScreen extends Screen {
 
 	// ============================================================ Layout
 
-	private int px1() { return Math.max(6, width / 2 - 250); }
-	private int px2() { return Math.min(width - 6, width / 2 + 250); }
-	private int py1() { return Math.max(6, height / 2 - 160); }
-	private int py2() { return Math.min(height - 6, height / 2 + 160); }
+	private int halfW() { return Math.min(300, (width - 12) / 2); }
+	private int halfH() { return Math.min(200, (height - 12) / 2); }
+	private int px1() { return width / 2 - halfW(); }
+	private int px2() { return width / 2 + halfW(); }
+	private int py1() { return height / 2 - halfH(); }
+	private int py2() { return height / 2 + halfH(); }
 	private int accent() { return 0xFF000000 | KaisersSlayers.config().accentColor; }
 
 	@Override
@@ -106,28 +110,41 @@ public class KsScreen extends Screen {
 		int sbx2 = x1 + SIDEBAR_W;
 		g.fill(x1 + 1, y1 + HEADER_H + 1, sbx2, y2 - 1, 0x60000000);
 		g.fill(sbx2, y1 + HEADER_H + 1, sbx2 + 1, y2 - 1, 0x30FFFFFF);
-		int cy = y1 + HEADER_H + 6;
+		int sideTop = y1 + HEADER_H + 4, sideBottom = y2 - 4;
+		int sideContent = Menus.CATEGORIES.size() * SIDE_ROW + 12;
+		double maxSide = Math.max(0, sideContent - (sideBottom - sideTop));
+		sideScroll = Math.max(0, Math.min(maxSide, sideScroll));
+		g.enableScissor(x1 + 1, sideTop, sbx2, sideBottom);
+		int cy = sideTop + 2 - (int) sideScroll;
 		for (int i = 0; i < Menus.CATEGORIES.size(); i++) {
 			Menus.Category c = Menus.CATEGORIES.get(i);
 			if (i == 7) {
-				Ui.text(g, font, "§8SLAYER", x1 + 10, cy + 2, 0.7f, 0xFFFFFFFF, false);
-				cy += 11;
+				Ui.text(g, font, "§8SLAYER", x1 + 10, cy + 3, 0.7f, 0xFFFFFFFF, false);
+				g.fill(x1 + 38, cy + 5, sbx2 - 8, cy + 6, 0x20FFFFFF);
+				cy += 10;
 			}
-			int ry1 = cy, ry2 = cy + 18;
+			int ry1 = cy, ry2 = cy + SIDE_ROW - 1;
 			boolean active = i == category && search.isEmpty();
-			boolean hover = Ui.inside(mx, my, x1 + 4, ry1, sbx2 - 4, ry2);
+			boolean hover = Ui.inside(mx, my, x1 + 4, ry1, sbx2 - 4, ry2) && my >= sideTop && my < sideBottom;
 			if (active) {
 				Ui.round(g, x1 + 4, ry1, sbx2 - 4, ry2, Ui.argb(c.accent(), 0x40));
 				g.fill(x1 + 4, ry1 + 2, x1 + 6, ry2 - 2, c.accent());
 			} else if (hover) {
 				Ui.round(g, x1 + 4, ry1, sbx2 - 4, ry2, 0x20FFFFFF);
 			}
-			Ui.icon(g, c.icon(), x1 + 9, ry1 + 2, 0.875f);
+			Ui.icon(g, c.icon(), x1 + 9, ry1 + 1.5f, 0.75f);
 			String label = c.slayer() != null ? c.slayer().bossName : c.name();
-			g.text(font, (active ? "§f§l" : hover ? "§f" : "§7") + fit(font, label, SIDEBAR_W - 34), x1 + 27, ry1 + 5, 0xFFFFFFFF, false);
+			g.text(font, (active ? "§f§l" : hover ? "§f" : "§7") + fit(font, label, SIDEBAR_W - 34), x1 + 25, ry1 + 4, 0xFFFFFFFF, false);
 			final int idx = i;
-			hits.add(new HitBox(x1 + 4, ry1, sbx2 - 4, ry2, () -> select(idx), null));
-			cy += 19;
+			if (ry2 > sideTop && ry1 < sideBottom) hits.add(new HitBox(x1 + 4, Math.max(ry1, sideTop), sbx2 - 4, Math.min(ry2, sideBottom), () -> select(idx), null));
+			cy += SIDE_ROW;
+		}
+		g.disableScissor();
+		if (maxSide > 0) {
+			int vh = sideBottom - sideTop;
+			int bh = Math.max(12, vh * vh / sideContent);
+			int by = sideTop + (int) ((vh - bh) * (sideScroll / maxSide));
+			g.fill(sbx2 - 3, by, sbx2 - 1, by + bh, 0x50FFFFFF);
 		}
 
 		// ---------- Inhalt ----------
@@ -166,7 +183,8 @@ public class KsScreen extends Screen {
 		button(g, mx, my, x2 - 78, y2 - 21, x2 - 8, y2 - 5, "Fertig", acc, this::onClose);
 		button(g, mx, my, x2 - 168, y2 - 21, x2 - 84, y2 - 5, "HUD-Editor", 0xFF3A3A48,
 				() -> minecraft.gui.setScreen(new HudEditorScreen(this)));
-		Ui.text(g, font, "§8Rechtsklick = zurück · Mausrad = scrollen", sbx2 + 10, y2 - 15, 0.7f, 0xFFFFFFFF, false);
+		String hint = "§8Rechtsklick = zurück · Mausrad = scrollen";
+		if (font.width(hint) * 0.7f < (x2 - 172) - (sbx2 + 10)) Ui.text(g, font, hint, sbx2 + 10, y2 - 15, 0.7f, 0xFFFFFFFF, false);
 
 		g.pose().popMatrix();
 	}
@@ -231,10 +249,10 @@ public class KsScreen extends Screen {
 			Ui.round(g, x1, ry1, x2, ry2, hover ? Ui.CARD_HOVER : Ui.CARD);
 			String label = o.label;
 			if (!search.isEmpty() && !o.category.isEmpty()) label = label + " §8· " + o.category;
-			g.text(font, "§f" + label, x1 + 8, ry1 + 5, 0xFFFFFFFF, false);
+			g.text(font, "§f" + label, x1 + 8, ry1 + 4, 0xFFFFFFFF, false);
 			int ctrlW = controlWidth(o);
 			String desc = fit(font, o.description, (int) ((x2 - x1 - ctrlW - 24) / 0.75f));
-			Ui.text(g, font, "§7" + desc, x1 + 8, ry1 + 16, 0.75f, 0xFFFFFFFF, false);
+			Ui.text(g, font, "§7" + desc, x1 + 8, ry1 + 14, 0.75f, 0xFFFFFFFF, false);
 			if (inClip) drawControl(g, o, x2 - 8 - ctrlW, ry1 + (ROW_H - 3) / 2, ctrlW, mx, my, acc, clipTop, clipBottom);
 			y += ROW_H;
 		}
@@ -383,7 +401,7 @@ public class KsScreen extends Screen {
 			Ui.hGradient(g, cx + 1, cy + 1, cx + cw - 1, cy + 3, acc, Ui.argb(acc, 0x00));
 			Ui.icon(g, Ui.slayerIcon(t), cx + 6, cy + 8, 1.5f);
 			LifetimeStats.Entry e = KaisersSlayers.tracker().lifetime().get(t);
-			g.text(font, t.color + "§l" + t.bossName, cx + 34, cy + 8, 0xFFFFFFFF, true);
+			g.text(font, t.color + "§l" + fit(font, t.bossName, cw - 42), cx + 34, cy + 8, 0xFFFFFFFF, true);
 			String lvl = e.level >= 0 ? "LVL " + e.level : "LVL ?";
 			Ui.text(g, font, "§7" + t.levelName + " Slayer · " + lvl, cx + 34, cy + 19, 0.75f, 0xFFFFFFFF, false);
 			ProfitTracker.Bucket total = KaisersSlayers.tracker().profit().total(t);
@@ -493,7 +511,8 @@ public class KsScreen extends Screen {
 
 	@Override
 	public boolean mouseScrolled(double x, double y, double h, double v) {
-		scrollTarget -= v * 24;
+		if (toLocalX(x) < px1() + SIDEBAR_W) sideScroll -= v * 16;
+		else scrollTarget -= v * 24;
 		return true;
 	}
 
