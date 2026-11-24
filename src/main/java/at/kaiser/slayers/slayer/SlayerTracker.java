@@ -77,6 +77,13 @@ public class SlayerTracker {
 	private SlayerType lastType;
 	private int lastTier;
 	private boolean dirty;
+	/** Purse für Mob-Kill-Coins: letzter Stand, -1 = unbekannt */
+	private double lastPurse = -1;
+	private long purseBlockedUntil;
+	private boolean countMobCoins = true;
+	/** Größere Sprünge sind Verkäufe/Bank, keine Mob-Drops */
+	static final double MAX_MOB_COINS = 25_000;
+	static final Pattern PURSE = Pattern.compile("^(?:Purse|Piggy): ([\\d,.]+)");
 	private final List<Drop> lastKillDrops = new java.util.ArrayList<>();
 	private int questCounter;
 	/** Nach einem Quest-Start per Chat kurz veraltete Scoreboard-Zustände ignorieren. */
@@ -111,6 +118,7 @@ public class SlayerTracker {
 	 * @param lines bereinigte Sidebar-Zeilen von oben nach unten, oder null wenn nicht in SkyBlock
 	 */
 	public void onScoreboard(List<String> lines, long now) {
+		trackPurse(lines, now);
 		// Boss-Zeile irgendwo im Scoreboard suchen (z. B. "Revenant Horror IV", "Atoned Horror V")
 		int idx = -1;
 		SlayerType foundType = null;
@@ -176,6 +184,40 @@ public class SlayerTracker {
 				progressMax = TextUtil.parseNumber(p.group(2));
 				progressUnit = p.group(3);
 			}
+		}
+	}
+
+	/** Purse wurde in einem Menü verändert (Verkauf, Bank, …) – bis dahin keine Mob-Coins zählen */
+	public void blockPurse(long until) {
+		purseBlockedUntil = Math.max(purseBlockedUntil, until);
+	}
+
+	public void setCountMobCoins(boolean on) {
+		countMobCoins = on;
+	}
+
+	/** Kleine Purse-Zuwächse während eines laufenden Quests = Coins von Mob-Kills */
+	private void trackPurse(List<String> lines, long now) {
+		double purse = -1;
+		if (lines != null) {
+			for (String l : lines) {
+				Matcher m = PURSE.matcher(l);
+				if (m.find()) {
+					purse = TextUtil.parseNumber(m.group(1));
+					break;
+				}
+			}
+		}
+		if (purse < 0) {
+			lastPurse = -1;
+			return;
+		}
+		double delta = lastPurse >= 0 ? purse - lastPurse : 0;
+		lastPurse = purse;
+		boolean questRunning = phase == Phase.GRINDING || phase == Phase.BOSS_ALIVE;
+		if (countMobCoins && questRunning && type != null && delta >= 1 && delta <= MAX_MOB_COINS && now >= purseBlockedUntil) {
+			profit.addItem(type, ProfitTracker.MOB_COINS, Math.round(delta));
+			dirty = true;
 		}
 	}
 

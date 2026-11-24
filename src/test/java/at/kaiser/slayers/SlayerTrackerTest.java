@@ -96,4 +96,21 @@ class SlayerTrackerTest {
 		assertEquals(10, t.progressMax());
 		assertEquals("Kills", t.progressUnit());
 	}
+
+	@Test
+	void mobKillCoinsFromPurse() {
+		SlayerTracker t = new SlayerTracker();
+		long now = 5_000_000;
+		java.util.function.BiFunction<String, String, List<String>> b = (purse, state) ->
+				new ArrayList<>(List.of("Purse: " + purse, "", "Slayer Quest", "Inferno Demonlord IV", state));
+		t.onChat("SLAYER QUEST STARTED!", now);
+		t.onScoreboard(b.apply("1,000,000", "(10/2,400) Combat XP"), now + 100); // Startwert
+		t.onScoreboard(b.apply("1,000,120", "(20/2,400) Combat XP"), now + 400); // +120 von Mobs
+		t.onScoreboard(b.apply("1,500,120", "(30/2,400) Combat XP"), now + 700); // +500k = Verkauf → ignorieren
+		t.blockPurse(now + 3000);
+		t.onScoreboard(b.apply("1,500,170", "(40/2,400) Combat XP"), now + 1000); // im Menü → ignorieren
+		t.onScoreboard(b.apply("1,500,200", "(50/2,400) Combat XP"), now + 4000); // +30
+		t.onScoreboard(b.apply("1,400,000", "(60/2,400) Combat XP"), now + 4300); // ausgegeben → nichts
+		assertEquals(150L, t.profit().session(SlayerType.BLAZE).items.get(at.kaiser.slayers.slayer.ProfitTracker.MOB_COINS));
+	}
 }

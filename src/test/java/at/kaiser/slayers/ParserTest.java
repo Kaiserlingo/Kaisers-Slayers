@@ -57,4 +57,15 @@ class ParserTest {
 		assertEquals(1, pool.stream().filter(e -> e.name().equals("Warden Heart")).count());
 		assertTrue(pool.stream().anyMatch(e -> e.name().equals("Custom Drop")));
 	}
+
+	@Test
+	void ownMinibossMatching() {
+		long msg = 10_000;
+		// 1 = fremder Miniboss (schon lange da), 2 = deiner (taucht mit der Meldung auf), 3 = zeitgleich, aber weiter weg
+		Map<Integer, Long> seen = Map.of(1, 0L, 2, 10_400L, 3, 9_800L);
+		Map<Integer, Double> dist = Map.of(1, 3.0, 2, 4.0, 3, 12.0);
+		assertEquals(2, at.kaiser.slayers.world.WorldScanner.pickOwnMini(seen, dist, java.util.Set.of(), msg));
+		assertEquals(3, at.kaiser.slayers.world.WorldScanner.pickOwnMini(seen, dist, java.util.Set.of(2), msg));
+		assertEquals(-1, at.kaiser.slayers.world.WorldScanner.pickOwnMini(seen, dist, java.util.Set.of(2, 3), msg));
+	}
 }

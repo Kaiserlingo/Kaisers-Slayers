@@ -13,6 +13,9 @@ import java.util.regex.Pattern;
  * Ohne Minecraft-Code → testbar. Preise kommen von außen (Funktion Item → Wert).
  */
 public class ProfitTracker {
+	/** Pseudo-Item für Coins, die Mobs während des Quests direkt in die Purse geben */
+	public static final String MOB_COINS = "Mob Kill Coins";
+
 
 	/** Ein Topf mit Zahlen – einmal pro Slayer für Session und für Gesamt. */
 	public static class Bucket {

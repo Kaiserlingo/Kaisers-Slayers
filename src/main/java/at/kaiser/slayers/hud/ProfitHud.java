@@ -18,12 +18,44 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/** Profit-Tracker als eigene, übersichtliche Karte: Drops mit Wert, Kosten, Gewinn, pro Stunde, pro Boss. */
+/**
+ * Profit-Tracker als schlichte Tabelle: Anzahl · Item (in Drop-Farbe) · Wert, darunter Kosten, Bosse, Profit, pro Stunde, Zeit.
+ * Im Inventar wird dieselbe Karte im Bearbeiten-Modus gezeichnet ({@link Edit}): Items anklicken zum Ausblenden,
+ * Session/Total und Preis-Modus umschalten, Reset – siehe {@link InventoryTracker}.
+ */
 public final class ProfitHud {
-	public static final int WIDTH = 176;
+	/** Mindestbreite der Karte; die echte Breite passt sich den Item-Namen an */
+	public static final int WIDTH = 150;
+	private static final int MAX_WIDTH = 240;
+	private static final int PAD = 5;
+	private static final int LINE = 10;
+	/** Breite der zuletzt gezeichneten Karte (für den HUD-Editor) */
+	public static int lastWidth = WIDTH;
 
 	/** Eine Zeile der Auswertung */
 	public record Row(String name, long count, double value, int tier, PriceService.Source source) {}
+
+	/** Klickbare Fläche im Bearbeiten-Modus (lokale Koordinaten der Karte) */
+	public record Hit(int x1, int y1, int x2, int y2, Runnable action) {}
+
+	/** Bearbeiten-Modus: sammelt klickbare Flächen und kennt die Mausposition (lokal) */
+	public static final class Edit {
+		public final List<Hit> hits = new ArrayList<>();
+		public final double mx, my;
+		public final boolean resetArmed;
+		public Runnable toggleMode, togglePrice, reset;
+		public java.util.function.Consumer<String> toggleItem;
+
+		public Edit(double mx, double my, boolean resetArmed) {
+			this.mx = mx;
+			this.my = my;
+			this.resetArmed = resetArmed;
+		}
+
+		boolean hover(int x1, int y1, int x2, int y2) {
+			return mx >= x1 && mx < x2 && my >= y1 && my < y2;
+		}
+	}
 
 	private ProfitHud() {}
 
@@ -32,6 +64,7 @@ public final class ProfitHud {
 		ModConfig cfg = KaisersSlayers.config();
 		if (!cfg.profitEnabled || !cfg.profitHud.enabled || mc.player == null || GamblingAnimation.hidesHud()) return;
 		if (!KaisersSlayers.onSkyBlock() && !KaisersSlayers.forceHud()) return;
+		if (InventoryTracker.isEditing()) return; // im Inventar zeichnet der Bearbeiten-Modus die Karte
 		SlayerType type = KaisersSlayers.tracker().type();
 		if (type == null) return;
 		ProfitTracker.Bucket b = bucket(type, cfg);
@@ -72,97 +105,169 @@ public final class ProfitHud {
 		return rows;
 	}
 
-	/** Höhe der Karte in Pixeln (ohne Skalierung) */
-	public static int height(SlayerType type, ProfitTracker.Bucket b, ModConfig cfg) {
-		int shown = 0;
-		long rest = 0;
-		for (Row r : rows(type, b)) {
-			if (cfg.hiddenItems.contains(r.name())) continue;
-			if (shown < cfg.profitMaxItems && r.value() >= cfg.profitMinValue) shown++;
-			else rest += r.count();
-		}
-		return 22 + Math.max(1, shown + (rest > 0 ? 1 : 0)) * 10 + 6 + 10 + 4 + 20 + 12;
+	/** Farbe eines Item-Namens: Coins gold, sonst die Drop-Seltenheit */
+	private static int nameColor(Row r) {
+		if (ProfitTracker.MOB_COINS.equals(r.name())) return 0xFFFFAA00;
+		return r.tier() <= 0 ? 0xFFFFFFFF : LootPool.tierColor(r.tier());
 	}
 
 	public static int draw(GuiGraphicsExtractor g, Font font, SlayerType type, ProfitTracker.Bucket b, ModConfig cfg) {
+		return draw(g, font, type, b, cfg, null);
+	}
+
+	/** Zeichnet die Karte bei (0,0) und gibt ihre Höhe zurück. Breite steht danach in {@link #lastWidth}. */
+	public static int draw(GuiGraphicsExtractor g, Font font, SlayerType type, ProfitTracker.Bucket b, ModConfig cfg, Edit edit) {
 		List<Row> rows = rows(type, b);
 		double itemValue = 0;
 		for (Row r : rows) itemValue += r.value();
 		double profit = itemValue - b.cost;
 		double perHour = b.perHour(profit);
-		double perBoss = b.kills > 0 ? profit / b.kills : 0;
 
-		// Zeilen auswählen: die wertvollsten N, Rest zusammenfassen
+		// Zeilen: die wertvollsten N einzeln, Rest zusammengefasst; ausgeblendete nur im Bearbeiten-Modus
 		List<Row> shown = new ArrayList<>();
+		List<Row> hiddenRows = new ArrayList<>();
 		double restValue = 0;
 		long restCount = 0;
 		for (Row r : rows) {
-			boolean hidden = cfg.hiddenItems.contains(r.name());
-			if (!hidden && shown.size() < cfg.profitMaxItems && r.value() >= cfg.profitMinValue) shown.add(r);
-			else if (!hidden) {
+			if (cfg.hiddenItems.contains(r.name())) {
+				if (edit != null) hiddenRows.add(r);
+			} else if (shown.size() < cfg.profitMaxItems && r.value() >= cfg.profitMinValue) {
+				shown.add(r);
+			} else {
 				restValue += r.value();
 				restCount += r.count();
 			}
 		}
 
-		int w = WIDTH;
-		int lines = shown.size() + (restCount > 0 ? 1 : 0);
-		int h = 22 + Math.max(1, lines) * 10 + 6 + 10 + 4 + 20 + 12;
-		int gold = 0xFFFFC234;
-		if (cfg.hudBackground) {
-			Ui.panel(g, 0, 0, w, h, 0xE0121218, 0x90FFC234);
-			Ui.hGradient(g, 1, 1, w - 1, 19, 0x60FFC234, 0x00121218);
-		}
-		g.text(font, "§6§l⛃ PROFIT", 6, 3, 0xFFFFFFFF, true);
+		// ---------- Spaltenbreiten ----------
+		String title = "§l" + type.bossName + " " + TextUtil.toRoman(KaisersSlayers.tracker().tier());
 		String mode = "TOTAL".equals(cfg.profitMode) ? "TOTAL" : "SESSION";
-		int mw = (int) (font.width(mode) * 0.75f) + 6;
-		Ui.round(g, w - mw - 5, 3, w - 5, 12, 0x60FFC234);
-		Ui.text(g, font, mode, w - mw - 2, 4.5f, 0.75f, 0xFFFFE9A8, false);
-		Ui.text(g, font, type.color + type.bossName + " §8· §7" + b.kills + " bosses" + (b.minibosses > 0 ? " · " + b.minibosses + " Minis" : ""),
-				6, 12, 0.75f, 0xFFFFFFFF, false);
-
-		int y = 22;
-		if (shown.isEmpty() && restCount == 0) {
-			g.text(font, "§8No drops yet", 6, y, 0xFFFFFFFF, true);
-			y += 10;
-		}
-		for (Row r : shown) {
-			int dot = LootPool.tierColor(r.tier());
-			g.fill(6, y + 3, 9, y + 6, dot);
-			String name = "§7" + TextUtil.formatInt(r.count()) + "x §f" + r.name();
-			String val = switch (r.source()) {
-				case BAZAAR -> "§6" + TextUtil.formatCoins(r.value());
-				case AUCTION -> "§e" + TextUtil.formatCoins(r.value());
-				case UNKNOWN -> "§8–";
-			};
-			int maxName = w - 18 - font.width(val) - 6;
-			g.text(font, fit(font, name, maxName), 12, y, 0xFFFFFFFF, true);
-			Ui.rightText(g, font, val, w - 6, y, 0xFFFFFFFF);
-			y += 10;
+		int chipW = (int) (font.width(mode) * 0.75f) + 8;
+		int countW = 0, nameW = 0, valueW = 0;
+		List<Row> all = new ArrayList<>(shown);
+		all.addAll(hiddenRows);
+		for (Row r : all) {
+			countW = Math.max(countW, font.width(TextUtil.formatInt(r.count()) + "x"));
+			nameW = Math.max(nameW, font.width(r.name()));
+			valueW = Math.max(valueW, font.width(valueText(r)));
 		}
 		if (restCount > 0) {
-			g.text(font, "§8+ " + TextUtil.formatInt(restCount) + " more", 12, y, 0xFFFFFFFF, true);
-			Ui.rightText(g, font, "§6" + TextUtil.formatCoins(restValue), w - 6, y, 0xFFFFFFFF);
-			y += 10;
+			countW = Math.max(countW, font.width("+" + TextUtil.formatInt(restCount)));
+			nameW = Math.max(nameW, font.width("more"));
+		}
+		int titleW = font.width(title) + 12 + chipW;
+		int w = Math.max(WIDTH, Math.max(titleW, countW + nameW + valueW + 16) + PAD * 2);
+		w = Math.min(MAX_WIDTH, w);
+		int nameMax = w - PAD * 2 - countW - valueW - 14;
+		lastWidth = w;
+
+		// ---------- Höhe ----------
+		int itemLines = Math.max(1, shown.size() + (restCount > 0 ? 1 : 0)) + hiddenRows.size();
+		int statLines = 5;
+		int h = 16 + itemLines * LINE + 5 + statLines * LINE + 3;
+		if (edit != null) h += 20;
+
+		if (cfg.hudBackground || edit != null) {
+			Ui.panel(g, 0, 0, w, h, 0xD8101015, edit != null ? 0xC0FFC234 : 0x60FFC234);
 		}
 
-		y += 3;
-		g.fill(6, y, w - 6, y + 1, 0x40FFFFFF);
-		y += 4;
-		g.text(font, "§7Quest Cost", 6, y, 0xFFFFFFFF, true);
-		Ui.rightText(g, font, "§c-" + TextUtil.formatCoins(b.cost), w - 6, y, 0xFFFFFFFF);
-		y += 12;
+		// ---------- Titel ----------
+		g.text(font, type.color + title, PAD, 4, 0xFFFFFFFF, true);
+		int cx2 = w - PAD, cx1 = cx2 - chipW;
+		boolean chipHover = edit != null && edit.hover(cx1, 2, cx2, 13);
+		Ui.round(g, cx1, 3, cx2, 12, chipHover ? 0xA0FFC234 : 0x50FFC234);
+		Ui.text(g, font, mode, cx1 + 4, 5f, 0.75f, 0xFFFFE9A8, false);
+		if (edit != null) edit.hits.add(new Hit(cx1, 2, cx2, 13, edit.toggleMode));
 
-		// Gewinn groß
-		Ui.round(g, 4, y - 1, w - 4, y + 19, profit >= 0 ? 0x302ECC71 : 0x30E74C3C);
-		Ui.text(g, font, "§7PROFIT", 8, y + 1, 0.75f, 0xFFFFFFFF, false);
-		String big = (profit >= 0 ? "§a§l" : "§c§l") + TextUtil.formatCoins(profit);
-		float bs = 1.5f;
-		Ui.text(g, font, big, w - 8 - font.width(big) * bs, y + 3, bs, 0xFFFFFFFF, true);
-		Ui.text(g, font, "§8" + TextUtil.formatDuration(b.activeMs), 8, y + 10, 0.75f, 0xFFFFFFFF, false);
-		y += 22;
-		g.text(font, "§7/h §6" + TextUtil.formatCoins(perHour) + "  §7/Boss §6" + TextUtil.formatCoins(perBoss), 6, y, gold, true);
+		// ---------- Items ----------
+		int y = 16;
+		int countX = PAD + countW, nameX = countX + 5;
+		if (shown.isEmpty() && restCount == 0 && hiddenRows.isEmpty()) {
+			g.text(font, "§8No drops yet", PAD, y, 0xFFFFFFFF, true);
+			y += LINE;
+		}
+		for (Row r : shown) {
+			y = itemRow(g, font, r, y, w, countX, nameX, nameMax, false, edit);
+		}
+		if (restCount > 0) {
+			String c = "+" + TextUtil.formatInt(restCount);
+			g.text(font, "§8" + c, countX - font.width(c), y, 0xFFFFFFFF, true);
+			g.text(font, "§8more", nameX, y, 0xFFFFFFFF, true);
+			Ui.rightText(g, font, "§6" + TextUtil.formatCoins(restValue), w - PAD, y, 0xFFFFFFFF);
+			y += LINE;
+		}
+		for (Row r : hiddenRows) {
+			y = itemRow(g, font, r, y, w, countX, nameX, nameMax, true, edit);
+		}
+
+		// ---------- Statistik ----------
+		y += 2;
+		g.fill(PAD, y, w - PAD, y + 1, 0x30FFFFFF);
+		y += 3;
+		stat(g, font, "Quest Cost", "§c-" + TextUtil.formatCoins(b.cost), y, w);
+		y += LINE;
+		stat(g, font, "Bosses Killed", "§e" + b.kills + (b.minibosses > 0 ? " §8· §e" + b.minibosses + " §7Minis" : ""), y, w);
+		y += LINE;
+		stat(g, font, "§f§lProfit", (profit >= 0 ? "§a§l" : "§c§l") + TextUtil.formatInt(Math.round(profit)) + " §r§7coins", y, w);
+		y += LINE;
+		stat(g, font, "Profit/Hour", "§6" + TextUtil.formatCoins(perHour), y, w);
+		y += LINE;
+		stat(g, font, "Uptime", "§b" + TextUtil.formatDuration(b.activeMs), y, w);
+		y += LINE;
+
+		// ---------- Bearbeiten-Leiste (nur im Inventar) ----------
+		if (edit != null) {
+			y += 3;
+			int bw = (w - PAD * 2 - 4) / 2;
+			String price = cfg.instantSellPrices ? "Instant Sell" : "Sell Offer";
+			button(g, font, edit, PAD, y, PAD + bw, y + 13, "§e⇄ §f" + price, 0xFF2A2A36, edit.togglePrice);
+			String reset = edit.resetArmed ? "§c§lConfirm?" : "§fReset " + ("TOTAL".equals(cfg.profitMode) ? "Total" : "Session");
+			button(g, font, edit, w - PAD - bw, y, w - PAD, y + 13, reset, edit.resetArmed ? 0xFF8A2A2A : 0xFF4A2228, edit.reset);
+		}
 		return h;
+	}
+
+	private static int itemRow(GuiGraphicsExtractor g, Font font, Row r, int y, int w, int countX, int nameX, int nameMax,
+							   boolean hidden, Edit edit) {
+		boolean hover = edit != null && edit.hover(2, y - 1, w - 2, y + LINE - 1);
+		if (hover) g.fill(2, y - 1, w - 2, y + LINE - 1, 0x25FFFFFF);
+		String c = TextUtil.formatInt(r.count()) + "x";
+		String name = fit(font, r.name(), nameMax);
+		if (hidden) {
+			g.text(font, "§8" + c, countX - font.width(c), y, 0xFFFFFFFF, true);
+			g.text(font, "§8§m" + name, nameX, y, 0xFFFFFFFF, true);
+			Ui.rightText(g, font, "§8hidden", w - PAD, y, 0xFFFFFFFF);
+		} else {
+			g.text(font, "§7" + c, countX - font.width(c), y, 0xFFFFFFFF, true);
+			g.text(font, name, nameX, y, nameColor(r), true);
+			Ui.rightText(g, font, valueText(r), w - PAD, y, 0xFFFFFFFF);
+		}
+		if (edit != null && edit.toggleItem != null) {
+			String item = r.name();
+			edit.hits.add(new Hit(2, y - 1, w - 2, y + LINE - 1, () -> edit.toggleItem.accept(item)));
+		}
+		return y + LINE;
+	}
+
+	private static String valueText(Row r) {
+		return switch (r.source()) {
+			case BAZAAR -> "§6" + TextUtil.formatCoins(r.value());
+			case AUCTION -> "§e" + TextUtil.formatCoins(r.value());
+			case UNKNOWN -> "§8–";
+		};
+	}
+
+	private static void stat(GuiGraphicsExtractor g, Font font, String label, String value, int y, int w) {
+		g.text(font, "§7" + label, PAD, y, 0xFFFFFFFF, true);
+		Ui.rightText(g, font, value, w - PAD, y, 0xFFFFFFFF);
+	}
+
+	private static void button(GuiGraphicsExtractor g, Font font, Edit edit, int x1, int y1, int x2, int y2, String text, int color, Runnable action) {
+		boolean hover = edit.hover(x1, y1, x2, y2);
+		Ui.round(g, x1, y1, x2, y2, hover ? Ui.mix(color, 0xFFFFFFFF, 0.2f) : color);
+		String t = fit(font, text, x2 - x1 - 4);
+		g.text(font, t, (x1 + x2) / 2 - font.width(t) / 2, y1 + 3, 0xFFFFFFFF, true);
+		edit.hits.add(new Hit(x1, y1, x2, y2, action));
 	}
 
 	private static String fit(Font font, String s, int max) {

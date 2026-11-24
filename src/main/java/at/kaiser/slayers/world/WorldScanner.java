@@ -49,7 +49,12 @@ public final class WorldScanner {
 	}
 
 	private final BossState state = new BossState();
-	private final Set<Integer> knownMinis = new HashSet<>();
+	/** Minibosse in der Nähe: Entity-ID des Namensschilds → wann zuerst gesehen */
+	private final Map<Integer, Long> miniFirstSeen = new HashMap<>();
+	/** Minibosse, die zu DEINER Quest gehören (über die Chat-Meldung "SLAYER MINI-BOSS ... HAS SPAWNED!" zugeordnet) */
+	private final Set<Integer> ownMinis = new HashSet<>();
+	private long ownMiniMsgAt;
+	private int pendingOwnMinis;
 	private final Map<BlockPos, Long> placedBeacons = new HashMap<>();
 	private final Set<Integer> alertedPillars = new HashSet<>();
 	private final Map<Integer, Long> dropSeen = new HashMap<>();
@@ -70,6 +75,32 @@ public final class WorldScanner {
 		return state;
 	}
 
+	/**
+	 * Hypixel schreibt "SLAYER MINI-BOSS ... HAS SPAWNED!" nur dem Spieler, dessen Quest den Miniboss gespawnt hat.
+	 * Der Miniboss, der zeitgleich (±3 s) neu neben dir auftaucht, gehört also dir.
+	 */
+	public void onOwnMinibossMessage(long now) {
+		ownMiniMsgAt = now;
+		pendingOwnMinis = Math.min(3, pendingOwnMinis + 1);
+	}
+
+	/** Pure Zuordnungs-Logik (testbar): nächstgelegener neuer Miniboss, der um die Chat-Meldung herum aufgetaucht ist. */
+	public static int pickOwnMini(Map<Integer, Long> firstSeen, Map<Integer, Double> distance, Set<Integer> alreadyOwn, long msgAt) {
+		int best = -1;
+		double bestD = Double.MAX_VALUE;
+		for (Map.Entry<Integer, Long> e : firstSeen.entrySet()) {
+			int id = e.getKey();
+			if (alreadyOwn.contains(id) || Math.abs(e.getValue() - msgAt) > 3000) continue;
+			Double d = distance.get(id);
+			if (d == null || d > 20) continue;
+			if (d < bestD) {
+				bestD = d;
+				best = id;
+			}
+		}
+		return best;
+	}
+
 	/** Vom AttackEntityCallback: welches Entity hat der Spieler zuletzt geschlagen (Fallback für die Boss-Erkennung). */
 	public void onAttack(Entity e) {
 		lastAttackedId = e.getId();
@@ -77,7 +108,9 @@ public final class WorldScanner {
 
 	public void reset() {
 		resetBossTracking();
-		knownMinis.clear();
+		miniFirstSeen.clear();
+		ownMinis.clear();
+		pendingOwnMinis = 0;
 		placedBeacons.clear();
 		dropSeen.clear();
 		Highlights.clear();
@@ -303,7 +336,9 @@ public final class WorldScanner {
 								SlayerTracker tracker, long now, boolean quiet) {
 		List<String> minis = type.minibosses();
 		if (minis.isEmpty()) return;
-		Set<Integer> alive = new HashSet<>();
+		Map<Integer, Label> found = new HashMap<>();
+		Map<Integer, String> names = new HashMap<>();
+		Map<Integer, Double> dist = new HashMap<>();
 		for (Label l : labels) {
 			String name = l.text();
 			if (NameParser.isOwnerMarker(name)) continue;
@@ -315,17 +350,42 @@ public final class WorldScanner {
 				}
 			}
 			if (mini == null || l.entity().distanceTo(player) > 40) continue;
-			Entity s = l.entity();
-			alive.add(s.getId());
+			int id = l.entity().getId();
+			found.put(id, l);
+			names.put(id, mini);
+			dist.put(id, (double) l.entity().distanceTo(player));
+			miniFirstSeen.putIfAbsent(id, now);
+		}
+		miniFirstSeen.keySet().retainAll(found.keySet());
+		ownMinis.retainAll(found.keySet());
 
-			String key = "mini" + s.getId();
-			if (quiet) {
-				// eigener Boss lebt: fremde Minibosse merken, aber nichts anzeigen und keinen Alert auslösen
-				knownMinis.add(s.getId());
+		// Chat-Meldung ↔ neuer Miniboss zuordnen (Meldung kann vor oder nach dem Namensschild kommen)
+		while (pendingOwnMinis > 0) {
+			int pick = pickOwnMini(miniFirstSeen, dist, ownMinis, ownMiniMsgAt);
+			if (pick < 0) {
+				if (now - ownMiniMsgAt > 4000) pendingOwnMinis = 0; // nichts gefunden → aufgeben
+				break;
+			}
+			pendingOwnMinis--;
+			ownMinis.add(pick);
+			tracker.profit().addMiniboss(type);
+			Label l = found.get(pick);
+			if (cfg.minibossWaypoint && !quiet) {
+				Waypoints.put("mini" + pick, names.get(pick), l.entity().getX(), l.entity().getY(), l.entity().getZ(), cfg.minibossColor,
+						now + cfg.waypointSeconds * 1000L);
+			}
+		}
+
+		for (Map.Entry<Integer, Label> e : found.entrySet()) {
+			int id = e.getKey();
+			Entity s = e.getValue().entity();
+			String key = "mini" + id;
+			boolean own = ownMinis.contains(id);
+			// fremde Minibosse: nur, wenn "Only Your Minibosses" aus ist – und nie während deines Bosses
+			if (quiet || (cfg.minibossOnlyOwn && !own)) {
 				Waypoints.remove(key);
 				continue;
 			}
-
 			Entity mob = mobBelow(s, mobs, null, player);
 			if (mob != null && cfg.feature(type, SlayerFeature.MINIBOSS_HIGHLIGHT)) glow.put(mob.getId(), cfg.minibossColor);
 			Entity at = mob != null ? mob : s;
@@ -336,26 +396,16 @@ public final class WorldScanner {
 			if (cfg.minibossTracer && cfg.feature(type, SlayerFeature.MINIBOSS_TRACER)) {
 				tracers.add(new Tracers.Tracer(at.getId(), cfg.minibossTracerColor));
 			}
-
-			if (knownMinis.add(s.getId())) {
-				if (s.distanceTo(player) <= 15) {
-					tracker.profit().addMiniboss(type);
-					KaisersSlayers.minibossAlert(mini);
-					if (cfg.minibossWaypoint) {
-						Waypoints.put(key, mini, at.getX(), at.getY(), at.getZ(), cfg.minibossColor, now + cfg.waypointSeconds * 1000L);
-					}
+			if (own) Waypoints.put(key, names.get(id), at.getX(), at.getY(), at.getZ(), cfg.minibossColor, 0);
+		}
+		for (Waypoints.Waypoint w : Waypoints.active(now)) {
+			if (w.key.startsWith("mini") && !w.key.equals("demo-mini")) {
+				try {
+					if (!found.containsKey(Integer.parseInt(w.key.substring(4)))) Waypoints.remove(w.key);
+				} catch (NumberFormatException ignored) {
 				}
-			} else {
-				Waypoints.put(key, mini, at.getX(), at.getY(), at.getZ(), cfg.minibossColor, 0);
 			}
 		}
-		knownMinis.removeIf(id -> {
-			if (!alive.contains(id)) {
-				Waypoints.remove("mini" + id);
-				return true;
-			}
-			return false;
-		});
 	}
 
 	// ======================================================================= Revenant

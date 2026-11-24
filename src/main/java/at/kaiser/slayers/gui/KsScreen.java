@@ -28,7 +28,7 @@ public class KsScreen extends Screen {
 	private static final int SIDEBAR_W = 122;
 	private static final int HEADER_H = 34;
 	private static final int FOOTER_H = 26;
-	private static final int ROW_H = 27;
+	private static final int ROW_H = 26;
 	private static final int SIDE_ROW = 16;
 	private static final int HEADER_ROW_H = 18;
 	private static int lastCategory = 0;
@@ -239,36 +239,56 @@ public class KsScreen extends Screen {
 
 	// ============================================================ Optionen zeichnen
 
+	/**
+	 * Optionen in Abschnitten: Abschnitts-Titel, darunter EINE Karte mit allen Zeilen (getrennt durch feine Linien).
+	 * Weniger Kästen = ruhigeres, übersichtlicheres Menü.
+	 */
 	private int drawOptions(GuiGraphicsExtractor g, List<Option> opts, int x1, int y, int x2, int mx, int my, int clipTop, int clipBottom, boolean profitTable) {
 		int startY = y;
 		int acc = accent();
-		boolean inClip;
 		if (opts.isEmpty()) {
 			g.text(font, "§8Nothing found.", x1, y + 4, 0xFFFFFFFF, false);
 			return 20;
 		}
-		for (Option o : opts) {
-			if (o instanceof Option.Header) {
-				y += 4;
-				Ui.text(g, font, "§l" + o.label.toUpperCase(java.util.Locale.ROOT), x1 + 2, y + 4, 0.75f, Ui.argb(acc, 0xFF), false);
-				g.fill(x1 + 2 + (int) (font.width("§l" + o.label.toUpperCase(java.util.Locale.ROOT)) * 0.75f) + 6, y + 7, x2, y + 8, 0x25FFFFFF);
-				y += HEADER_ROW_H - 4;
+		int i = 0;
+		while (i < opts.size()) {
+			// Abschnitts-Titel
+			if (opts.get(i) instanceof Option.Header hd) {
+				if (y > startY) y += 6;
+				String t = hd.label.toUpperCase(java.util.Locale.ROOT);
+				Ui.text(g, font, "§l" + t, x1 + 2, y + 2, 0.7f, Ui.argb(acc, 0xFF), false);
+				y += 11;
+				i++;
 				continue;
 			}
-			int ry1 = y, ry2 = y + ROW_H - 3;
-			inClip = ry2 > clipTop && ry1 < clipBottom;
-			boolean hover = inClip && Ui.inside(mx, my, x1, ry1, x2, ry2) && my >= clipTop && my < clipBottom;
-			Ui.round(g, x1, ry1, x2, ry2, hover ? Ui.CARD_HOVER : Ui.CARD);
-			String label = o.label;
-			if (!search.isEmpty() && !o.category.isEmpty()) label = label + " §8· " + o.category;
-			g.text(font, "§f" + label, x1 + 8, ry1 + 4, 0xFFFFFFFF, false);
-			int ctrlW = controlWidth(o);
-			String desc = fit(font, o.description, (int) ((x2 - x1 - ctrlW - 24) / 0.75f));
-			Ui.text(g, font, "§7" + desc, x1 + 8, ry1 + 14, 0.75f, 0xFFFFFFFF, false);
-			if (inClip) drawControl(g, o, x2 - 8 - ctrlW, ry1 + (ROW_H - 3) / 2, ctrlW, mx, my, acc, clipTop, clipBottom);
-			y += ROW_H;
+			// alle Zeilen bis zum nächsten Titel gehören in eine Karte
+			int j = i;
+			while (j < opts.size() && !(opts.get(j) instanceof Option.Header)) j++;
+			int cardTop = y, cardBottom = y + (j - i) * ROW_H;
+			if (cardBottom > clipTop && cardTop < clipBottom) Ui.round(g, x1, cardTop, x2, cardBottom, 0xFF1A1A22);
+			for (int k = i; k < j; k++) {
+				Option o = opts.get(k);
+				int ry1 = y, ry2 = y + ROW_H;
+				boolean inClip = ry2 > clipTop && ry1 < clipBottom;
+				if (inClip) {
+					boolean hover = Ui.inside(mx, my, x1, ry1, x2, ry2) && my >= clipTop && my < clipBottom;
+					if (hover) g.fill(x1 + 1, ry1 + (k == i ? 1 : 0), x2 - 1, ry2 - (k == j - 1 ? 1 : 0), 0x12FFFFFF);
+					if (k > i) g.fill(x1 + 8, ry1, x2 - 8, ry1 + 1, 0x12FFFFFF);
+					String label = o.label;
+					if (!search.isEmpty() && !o.category.isEmpty()) label = label + " §8· " + o.category;
+					int ctrlW = controlWidth(o);
+					int textMax = x2 - x1 - ctrlW - 24;
+					g.text(font, "§f" + fit(font, label, textMax), x1 + 8, ry1 + 5, 0xFFFFFFFF, false);
+					String desc = fit(font, o.description, (int) (textMax / 0.7f));
+					Ui.text(g, font, desc, x1 + 8, ry1 + 16, 0.7f, 0xFF8A8A98, false);
+					drawControl(g, o, x2 - 8 - ctrlW, ry1 + ROW_H / 2, ctrlW, mx, my, acc, clipTop, clipBottom);
+				}
+				y += ROW_H;
+			}
+			y += 2;
+			i = j;
 		}
-		if (profitTable) y = drawProfitTable(g, x1, y + 2, x2, mx, my, clipTop, clipBottom);
+		if (profitTable) y = drawProfitTable(g, x1, y + 4, x2, mx, my, clipTop, clipBottom);
 		return y - startY + 6;
 	}
 

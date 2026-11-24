@@ -42,7 +42,7 @@ public class HudEditorScreen extends Screen {
 		drawElement(g, cfg.slayerHud, slayerBox, mx, my, SlayerHud.lastWidth, () -> SlayerHud.draw(g, font, KaisersSlayers.tracker(), cfg, now), "Slayer HUD");
 		// Profit-HUD
 		SlayerType type = KaisersSlayers.tracker().type() != null ? KaisersSlayers.tracker().type() : SlayerType.ZOMBIE;
-		drawElement(g, cfg.profitHud, profitBox, mx, my, ProfitHud.WIDTH,
+		drawElement(g, cfg.profitHud, profitBox, mx, my, ProfitHud.lastWidth,
 				() -> ProfitHud.draw(g, font, type, ProfitHud.bucket(type, cfg), cfg), "Profit HUD");
 
 		// Hilfe

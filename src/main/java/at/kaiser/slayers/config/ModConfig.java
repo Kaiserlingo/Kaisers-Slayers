@@ -58,6 +58,8 @@ public class ModConfig {
 	/** Items unter diesem Gesamtwert werden zusammengefasst */
 	public long profitMinValue = 0;
 	public boolean profitCountSacks = true;
+	/** Coins von Mob-Kills (Purse-Zuwachs während des Quests) mitzählen */
+	public boolean profitMobCoins = true;
 	public boolean profitShowIcons = true;
 	/** Kosten-Faktor (z. B. 0.5 bei Aatrox "Slashed Pricing") */
 	public double costMultiplier = 1.0;
@@ -69,6 +71,8 @@ public class ModConfig {
 	public int soonSpawnPercent = 90;
 	public boolean minibossAlert = true;
 	public boolean minibossWaypoint = true;
+	/** Highlight/Strahl/Tracer/Waypoint nur für Minibosse aus DEINER Quest */
+	public boolean minibossOnlyOwn = true;
 	public int waypointSeconds = 15;
 	public boolean failAlert = true;
 	/** Bei Quest Failed eine klickbare "Call Maddox"-Nachricht im Chat */

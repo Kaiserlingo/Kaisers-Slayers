@@ -121,6 +121,7 @@ public final class PriceService {
 	}
 
 	public Price price(String itemName, boolean instant) {
+		if (at.kaiser.slayers.slayer.ProfitTracker.MOB_COINS.equals(itemName)) return new Price(1, Source.BAZAAR);
 		String id = idForName(itemName);
 		Double bz = (instant ? instantSell : sellOffer).get(id);
 		if (bz != null && bz > 0) return new Price(bz, Source.BAZAAR);

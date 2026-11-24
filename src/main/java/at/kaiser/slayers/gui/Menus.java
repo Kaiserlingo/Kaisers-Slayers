@@ -69,6 +69,8 @@ public final class Menus {
 				() -> c().callMaddoxMessage, v -> c().callMaddoxMessage = v));
 		o.add(Option.header("Minibosses"));
 		o.add(Option.toggle("Miniboss Alert", "Title + sound when a miniboss spawns next to you.", () -> c().minibossAlert, v -> c().minibossAlert = v));
+		o.add(Option.toggle("Only Your Minibosses", "Highlight, beam, tracer and waypoint only for minibosses spawned by YOUR quest (matched via the SLAYER MINI-BOSS chat message).",
+				() -> c().minibossOnlyOwn, v -> c().minibossOnlyOwn = v));
 		o.add(Option.toggle("Miniboss Waypoint", "Arrow + distance to the miniboss at the top of the screen.", () -> c().minibossWaypoint, v -> c().minibossWaypoint = v));
 		o.add(Option.slider("Waypoint Duration", "How long the miniboss arrow stays visible.", 5, 60, 5,
 				() -> (double) c().waypointSeconds, v -> c().waypointSeconds = (int) Math.round(v), v -> (int) v + "s"));
@@ -125,10 +127,12 @@ public final class Menus {
 	static List<Option> profit() {
 		List<Option> o = new ArrayList<>();
 		o.add(Option.toggle("Profit Tracker", "Own profit HUD with drops, quest cost and profit.", () -> c().profitEnabled, v -> c().profitEnabled = v));
-		o.add(Option.toggle("Tracker in Inventory", "Shows the profit tracker next to your inventory and chests – with buttons for Session/Total, Instant Sell/Sell Offer and Reset.",
+		o.add(Option.toggle("Edit in Inventory", "While an inventory or chest is open, the Profit HUD becomes editable: click items to hide them, toggle Session/Total and Instant Sell/Sell Offer, reset, drag to move, scroll to resize.",
 				() -> c().inventoryTracker, v -> c().inventoryTracker = v));
 		o.add(Option.choice("Period", "Session = since game start/reset, Total = everything so far.", List.of("SESSION", "TOTAL"),
 				v -> v.equals("TOTAL") ? "Total" : "Session", () -> c().profitMode, v -> c().profitMode = v));
+		o.add(Option.toggle("Count Mob Kill Coins", "Coins mobs add to your purse during the quest (sales, bank and menus are ignored).",
+				() -> c().profitMobCoins, v -> c().profitMobCoins = v));
 		o.add(Option.toggle("Count Sack Drops", "Also count items from [Sacks] messages (e.g. Revenant Flesh).", () -> c().profitCountSacks, v -> c().profitCountSacks = v));
 		o.add(Option.choice("Price Mode", "Bazaar price: Instant Sell or Sell Offer.", List.of(true, false),
 				v -> v ? "Instant Sell" : "Sell Offer", () -> c().instantSellPrices, v -> c().instantSellPrices = v));

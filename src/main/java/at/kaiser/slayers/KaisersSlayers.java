@@ -204,7 +204,10 @@ public class KaisersSlayers implements ClientModInitializer {
 		// Scoreboard 4x pro Sekunde auswerten
 		if (++tickCounter % 5 != 0) return;
 		onSkyBlock = ScoreboardReader.isOnSkyBlock(mc);
+		// Coins aus Menüs (NPC-/Bazaar-Verkauf, Bank, Trades) nicht als Mob-Kill-Coins zählen
+		if (mc.gui.screen() != null) TRACKER.blockPurse(now + 3000);
 		List<String> lines = onSkyBlock ? ScoreboardReader.readLines(mc) : null;
+		TRACKER.setCountMobCoins(config.profitMobCoins);
 		TRACKER.onScoreboard(lines, now);
 		TRACKER.tick(now);
 		if (onSkyBlock) PRICES.tick(now);
@@ -390,6 +393,7 @@ public class KaisersSlayers implements ClientModInitializer {
 		public void onMinibossMessage(String message) {
 			String name = message.replaceFirst("^SLAYER MINI-?BOSS\\s*", "").replaceFirst("\\s*HAS SPAWNED!?$", "");
 			minibossAlert(name.isBlank() ? "Miniboss" : name);
+			SCANNER.onOwnMinibossMessage(System.currentTimeMillis());
 		}
 
 		@Override
