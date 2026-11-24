@@ -25,7 +25,7 @@ public class KsClientGameTest implements FabricClientGameTest {
 	@Override
 	public void runTest(ClientGameTestContext ctx) {
 		try (TestSingleplayerContext sp = ctx.worldBuilder().create()) {
-			sp.getClientWorld().waitForChunksRender();
+			sp.getClientLevel().waitForChunksRender();
 			sp.getServer().runCommand("time set day");
 			sp.getServer().runCommand("gamerule doDaylightCycle false");
 			sp.getServer().runCommand("execute as @p at @s run summon zombie ^ ^ ^5 {NoAI:1b,PersistenceRequired:1b}");
