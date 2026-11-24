@@ -54,7 +54,7 @@ public final class InventoryTracker {
 				KaisersSlayers.config().save();
 				return false;
 			});
-			ScreenMouseEvents.allowMouseScroll(screen).register((s, x, y, h, v) -> !scroll(x, y, v));
+			ScreenMouseEvents.allowMouseScroll(screen).register((s, x, y, hor, v) -> !scroll(x, y, v));
 			ScreenEvents.remove(screen).register(s -> {
 				if (editingScreen == s) editingScreen = null;
 				if (dragging) KaisersSlayers.config().save();
