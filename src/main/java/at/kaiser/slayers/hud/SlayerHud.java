@@ -21,6 +21,8 @@ import java.util.Locale;
 /** Das Slayer-HUD: Quest, Fortschritt, Zeiten, Level-Prognose – als Karte im Kaiser's-Slayers-Design. */
 public final class SlayerHud {
 	public static final int WIDTH = 168;
+	/** Tatsächliche Breite beim letzten Zeichnen (wächst mit langen Zeilen) */
+	public static int lastWidth = WIDTH;
 
 	private SlayerHud() {}
 
@@ -100,6 +102,9 @@ public final class SlayerHud {
 
 		// ---------- Zeichnen ----------
 		int w = WIDTH;
+		for (String r : rows) w = Math.max(w, font.width(r) + 12);
+		w = Math.min(w, 240);
+		lastWidth = w;
 		int h = 22 + (barPct >= 0 ? 16 : 0) + rows.size() * 10 + 4;
 		if (cfg.hudBackground) {
 			Ui.panel(g, 0, 0, w, h, 0xE0121218, Ui.argb(accent, 0x90));

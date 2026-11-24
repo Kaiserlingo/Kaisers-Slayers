@@ -39,7 +39,7 @@ public class HudEditorScreen extends Screen {
 		for (int y = 0; y < height; y += 20) g.fill(0, y, width, y + 1, 0x10FFFFFF);
 
 		// Slayer-HUD
-		drawElement(g, cfg.slayerHud, slayerBox, mx, my, SlayerHud.WIDTH, () -> SlayerHud.draw(g, font, KaisersSlayers.tracker(), cfg, now), "Slayer-HUD");
+		drawElement(g, cfg.slayerHud, slayerBox, mx, my, SlayerHud.lastWidth, () -> SlayerHud.draw(g, font, KaisersSlayers.tracker(), cfg, now), "Slayer-HUD");
 		// Profit-HUD
 		SlayerType type = KaisersSlayers.tracker().type() != null ? KaisersSlayers.tracker().type() : SlayerType.ZOMBIE;
 		drawElement(g, cfg.profitHud, profitBox, mx, my, ProfitHud.WIDTH,
@@ -48,9 +48,10 @@ public class HudEditorScreen extends Screen {
 		// Hilfe
 		int acc = 0xFF000000 | cfg.accentColor;
 		String help = "§fZiehen §7= verschieben   §fMausrad §7= Größe   §fRechtsklick §7= an/aus   §fR §7= zurücksetzen   §fESC §7= fertig";
-		int hw = font.width(help);
-		Ui.panel(g, width / 2 - hw / 2 - 8, height - 26, width / 2 + hw / 2 + 8, height - 8, 0xE0111117, Ui.argb(acc, 0x80));
-		g.text(font, help, width / 2 - hw / 2, height - 21, 0xFFFFFFFF, false);
+		float hs = Math.min(1f, (width - 30) / (float) font.width(help));
+		int hw = (int) (font.width(help) * hs);
+		Ui.panel(g, width / 2 - hw / 2 - 8, height - 24, width / 2 + hw / 2 + 8, height - 8, 0xE0111117, Ui.argb(acc, 0x80));
+		Ui.text(g, font, help, width / 2f - hw / 2f, height - 19, hs, 0xFFFFFFFF, false);
 		Ui.centered(g, font, "§l§nHUD-EDITOR", width / 2f, 8, 1.5f, acc, true);
 	}
 

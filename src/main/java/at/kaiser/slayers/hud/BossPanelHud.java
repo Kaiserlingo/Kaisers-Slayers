@@ -46,7 +46,7 @@ public final class BossPanelHud {
 		if (fight && cfg.feature(type, SlayerFeature.BOSS_BAR)) {
 			// nicht mit dem Slayer-HUD überlappen
 			ModConfig.HudPos hp0 = cfg.slayerHud;
-			int hudRight = hp0.enabled ? Math.round(hp0.x * sw + SlayerHud.WIDTH * hp0.scale) + 10 : 0;
+			int hudRight = hp0.enabled ? Math.round(hp0.x * sw + SlayerHud.lastWidth * hp0.scale) + 10 : 0;
 			int bw = Math.min(200, sw - 16);
 			int bx = Math.max(sw / 2 - bw / 2, hudRight);
 			if (bx + bw > sw - 8) bw = Math.max(110, sw - 8 - bx);
