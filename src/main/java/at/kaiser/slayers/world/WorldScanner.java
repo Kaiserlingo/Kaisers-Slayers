@@ -1,5 +1,6 @@
 package at.kaiser.slayers.world;
 
+import at.kaiser.slayers.KaisersSlayers;
 import at.kaiser.slayers.config.ModConfig;
 import at.kaiser.slayers.config.SlayerFeature;
 import at.kaiser.slayers.hud.Feedback;
@@ -320,7 +321,7 @@ public final class WorldScanner {
 			if (knownMinis.add(s.getId())) {
 				if (s.distanceTo(player) <= 15) {
 					tracker.profit().addMiniboss(type);
-					at.kaiser.slayers.KaisersSlayers.minibossAlert(mini);
+					KaisersSlayers.minibossAlert(mini);
 					if (cfg.minibossWaypoint) {
 						Waypoints.put(key, mini, at.getX(), at.getY(), at.getZ(), cfg.minibossColor, now + cfg.waypointSeconds * 1000L);
 					}

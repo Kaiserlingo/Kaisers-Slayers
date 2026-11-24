@@ -22,7 +22,7 @@ public final class ItemIcons {
 		KEYWORDS.put("rune", Items.MAGMA_CREAM);
 		KEYWORDS.put("web", Items.COBWEB);
 		KEYWORDS.put("arrow", Items.ARROW);
-		KEYWORDS.put("poison", Items.LIME_DYE);
+		KEYWORDS.put("poison", Items.SPIDER_EYE);
 		KEYWORDS.put("eye", Items.ENDER_EYE);
 		KEYWORDS.put("swatter", Items.WOODEN_SHOVEL);
 		KEYWORDS.put("talisman", Items.SPIDER_EYE);
@@ -38,7 +38,7 @@ public final class ItemIcons {
 		KEYWORDS.put("null atom", Items.ENDER_PEARL);
 		KEYWORDS.put("tuner", Items.COMPASS);
 		KEYWORDS.put("hazmat", Items.LEATHER_HELMET);
-		KEYWORDS.put("espresso", Items.BROWN_DYE);
+		KEYWORDS.put("espresso", Items.SUGAR);
 		KEYWORDS.put("chalice", Items.GOLD_INGOT);
 		KEYWORDS.put("dice", Items.SKELETON_SKULL);
 		KEYWORDS.put("merger", Items.ENDER_EYE);
