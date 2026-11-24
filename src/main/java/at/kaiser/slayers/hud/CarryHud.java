@@ -28,6 +28,8 @@ import java.util.Map;
 public final class CarryHud {
 	public static final int WIDTH = 150;
 	private static final int PAD = 5;
+	/** Höhe beim letzten Zeichnen (zum Im-Bild-Halten) */
+	public static int lastHeight = 0;
 	public static int lastWidth = WIDTH;
 	private static final Map<String, ResolvableProfile> PROFILES = new HashMap<>();
 
@@ -42,10 +44,14 @@ public final class CarryHud {
 		if (clients.isEmpty()) return;
 		int x = Math.round(cfg.carryHud.x * mc.getWindow().getGuiScaledWidth());
 		int y = Math.round(cfg.carryHud.y * mc.getWindow().getGuiScaledHeight());
+		// immer ganz im Bild halten (z. B. nach Auflösungs-Wechsel oder wenn die Karte breiter wird)
+		int sw = mc.getWindow().getGuiScaledWidth(), sh = mc.getWindow().getGuiScaledHeight();
+		x = Math.max(0, Math.min(x, sw - Math.round(lastWidth * cfg.carryHud.scale) - 1));
+		y = Math.max(0, Math.min(y, sh - Math.round(lastHeight * cfg.carryHud.scale) - 1));
 		g.pose().pushMatrix();
 		g.pose().translate(x, y);
 		g.pose().scale(cfg.carryHud.scale, cfg.carryHud.scale);
-		draw(g, mc.font, cfg, clients);
+		lastHeight = draw(g, mc.font, cfg, clients);
 		g.pose().popMatrix();
 	}
 

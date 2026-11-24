@@ -112,7 +112,7 @@ public class ModConfig {
 
 	// ================= Carries =================
 	public boolean carryEnabled = true;
-	public HudPos carryHud = new HudPos(0.70f, 0.30f);
+	public HudPos carryHud = new HudPos(0.62f, 0.30f);
 	public boolean carryShowHeads = true;
 	public boolean carryShowBars = true;
 	public boolean carryShowPayment = true;
@@ -203,7 +203,7 @@ public class ModConfig {
 		if (hiddenItems == null) hiddenItems = new ArrayList<>();
 		if (slayerHud == null) slayerHud = new HudPos(0.005f, 0.06f);
 		if (profitHud == null) profitHud = new HudPos(0.005f, 0.55f);
-		if (carryHud == null) carryHud = new HudPos(0.70f, 0.30f);
+		if (carryHud == null) carryHud = new HudPos(0.62f, 0.30f);
 		if (gamblingStyle == null) gamblingStyle = "CASE";
 		if (gamblingTrigger == null) gamblingTrigger = "ALWAYS";
 		if (profitMode == null) profitMode = "SESSION";

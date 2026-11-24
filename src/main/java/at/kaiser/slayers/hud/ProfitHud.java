@@ -30,6 +30,8 @@ public final class ProfitHud {
 	private static final int PAD = 5;
 	private static final int LINE = 10;
 	/** Breite der zuletzt gezeichneten Karte (für den HUD-Editor) */
+	/** Höhe beim letzten Zeichnen (zum Im-Bild-Halten) */
+	public static int lastHeight = 0;
 	public static int lastWidth = WIDTH;
 
 	/** Eine Zeile der Auswertung */
@@ -72,10 +74,14 @@ public final class ProfitHud {
 
 		int x = Math.round(cfg.profitHud.x * mc.getWindow().getGuiScaledWidth());
 		int y = Math.round(cfg.profitHud.y * mc.getWindow().getGuiScaledHeight());
+		// immer ganz im Bild halten (z. B. nach Auflösungs-Wechsel oder wenn die Karte breiter wird)
+		int sw = mc.getWindow().getGuiScaledWidth(), sh = mc.getWindow().getGuiScaledHeight();
+		x = Math.max(0, Math.min(x, sw - Math.round(lastWidth * cfg.profitHud.scale) - 1));
+		y = Math.max(0, Math.min(y, sh - Math.round(lastHeight * cfg.profitHud.scale) - 1));
 		g.pose().pushMatrix();
 		g.pose().translate(x, y);
 		g.pose().scale(cfg.profitHud.scale, cfg.profitHud.scale);
-		draw(g, mc.font, type, b, cfg);
+		lastHeight = draw(g, mc.font, type, b, cfg);
 		g.pose().popMatrix();
 	}
 

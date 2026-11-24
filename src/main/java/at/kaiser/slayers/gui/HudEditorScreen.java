@@ -147,7 +147,7 @@ public class HudEditorScreen extends Screen {
 			ModConfig cfg = KaisersSlayers.config();
 			cfg.slayerHud = new ModConfig.HudPos(0.005f, 0.06f);
 			cfg.profitHud = new ModConfig.HudPos(0.005f, 0.55f);
-			cfg.carryHud = new ModConfig.HudPos(0.70f, 0.30f);
+			cfg.carryHud = new ModConfig.HudPos(0.62f, 0.30f);
 			cfg.save();
 			return true;
 		}
