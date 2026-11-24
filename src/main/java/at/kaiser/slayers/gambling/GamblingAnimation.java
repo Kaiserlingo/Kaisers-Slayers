@@ -389,7 +389,7 @@ public final class GamblingAnimation {
 			flash *= (float) Math.pow(0.004, dt);
 		}
 		if (stage != Stage.REVEAL || t < REVEAL_MS - 600) {
-			Ui.centered(g, mc.font, "§8Press §7[" + KaisersSlayers.skipKeyName() + "]§8 to skip", sw / 2f, sh - 12, 0.75f, 0xFFFFFFFF, false);
+			Ui.centered(g, mc.font, "§7Press §f[" + KaisersSlayers.skipKeyName() + "]§7 to skip", sw / 2f, sh - 12, 0.75f, 0xFFFFFFFF, false);
 		}
 	}
 
@@ -650,7 +650,13 @@ public final class GamblingAnimation {
 	private static void renderReveal(GuiGraphicsExtractor g, Font font, int sw, int sh, long t, float alpha) {
 		ModConfig cfg = KaisersSlayers.config();
 		int color = LootPool.tierColor(result.tier());
-		int w = 180, h = 132;
+		// Höhe der Karte aus dem Inhalt: Icon, Seltenheit, Name (1–2 Zeilen), Wert
+		int w = 180;
+		String name = (resultCount > 1 ? resultCount + "x " : "") + result.name();
+		List<String> lines = wrap(font, name, (int) ((w - 16) / 1.2f), 2);
+		boolean showValue = cfg.gamblingShowValue && resultValue > 0;
+		int contentH = 48 + 7 + 11 + lines.size() * 12 + (showValue ? 6 + 9 : 0);
+		int h = contentH + 28;
 		float cx = sw / 2f, cy = centerY(sh);
 		// Karte muss mit Platz für JACKPOT oben und Hinweis unten in den Bildschirm passen
 		float room = sh - 20 - contentTop(sh) - (jackpot ? 30 : 0) - (onlyCommon ? 16 : 0);
@@ -672,20 +678,18 @@ public final class GamblingAnimation {
 		g.fillGradient(x1 + 2, y1 + 2, x2 - 2, y2 - 2, Ui.argb(color, (int) (0x10 * alpha)), Ui.argb(color, (int) (0x60 * alpha)));
 
 		// Icon (48 px) oben mittig, darunter Seltenheit, Name (max. 2 Zeilen) und Wert – alles horizontal zentriert
-		float y = y1 + 10;
+		float y = y1 + 14;
 		Ui.icon(g, ItemIcons.of(result.name()), -24, y, 3.0f);
-		y += 48 + 6;
+		y += 48 + 7;
 		String rarityName = onlyCommon ? "§7NO RARE DROP" : LootPool.tierName(result.tier());
 		Ui.centered(g, font, rarityName, 0, y, 0.9f, Ui.argb(color, a), true);
 		y += 11;
-		String name = (resultCount > 1 ? resultCount + "x " : "") + result.name();
-		List<String> lines = wrap(font, name, (int) ((w - 16) / 1.2f), 2);
 		for (String l : lines) {
 			Ui.centered(g, font, "§f§l" + l, 0, y, 1.2f, Ui.argb(0xFFFFFF, a), true);
 			y += 12;
 		}
-		if (cfg.gamblingShowValue && resultValue > 0) {
-			Ui.centered(g, font, "§6⛃ " + TextUtil.formatCoins(resultValue) + " coins", 0, y2 - 14, 1.0f, Ui.argb(0xFFFFFF, a), true);
+		if (showValue) {
+			Ui.centered(g, font, "§6⛃ " + TextUtil.formatCoins(resultValue) + " coins", 0, y + 6, 1.0f, Ui.argb(0xFFFFFF, a), true);
 		}
 		g.pose().popMatrix();
 

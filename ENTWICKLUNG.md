@@ -9,11 +9,11 @@ Diese Datei erklärt, wo was liegt und wie man neue Funktionen hinzufügt.
 | `KaisersSlayers.java` | Einstiegspunkt: registriert HUDs, Events, Befehle, Tasten. Der Tick-Loop ruft Scanner und Tracker auf. |
 | `slayer/SlayerTracker.java` | Erkennt Quest-Phasen aus Scoreboard und Chat, führt die Statistik. **Ohne Minecraft-Code → testbar.** |
 | `slayer/SlayerType.java` | Alle Slayer: Boss-Name, Kosten, XP, Minibosse, Standardfarbe. |
-| `world/WorldScanner.java` | Schaut sich die Entities an: eigener Boss, Minibosse, Slayer-spezifische Dinge. Befüllt `Highlights`, `Waypoints` und `BossState`. |
+| `world/WorldScanner.java` | Schaut sich die Entities an: eigener Boss, Minibosse, Slayer-spezifische Dinge. Befüllt `Highlights`, `Waypoints`, `WorldBeams`, `Tracers` und `BossState`. |
 | `world/NameParser.java` | Liest Namensschilder (HP, Hits, Attunement, Timer, Pillar). **Testbar.** |
 | `mixin/` | Glow-Umriss, Boss-Timer-Namensschild, Zugriff für Lichtstrahlen. Injects sind optional (`defaultRequire: 0`). |
-| `render/` | `WorldRender` (Lichtstrahlen), `BossNametag` (Text direkt am Boss) |
-| `hud/` | `SlayerHud`, `ProfitHud`, `BossPanelHud` (HP-Leiste, Boss-Infos, Waypoint-Pfeile), `AlertOverlay` |
+| `render/` | `WorldRender` (Lichtstrahlen + Tracer-Linien über Minecrafts Gizmos), `BossNametag` (Text direkt am Boss) |
+| `hud/` | `SlayerHud`, `ProfitHud`, `BossPanelHud` (HP-Leiste, Boss-Infos, Waypoint-Pfeile), `AlertOverlay`, `InventoryTracker` (Profit-Panel + Buttons neben Inventaren) |
 | `gambling/` | Vollbild-Gambling (`GamblingAnimation`), Loot-Listen, Item-Icons |
 | `gui/` | `KsScreen` (Menü), `Menus` (**alle Einstellungen**), `Option` (Schalter/Auswahl/Regler/Farbe/Knopf), `HudEditorScreen`, `Ui` (Design) |
 | `DemoData.java` | Beispieldaten für `/ks test` und den Spieltest |
@@ -57,5 +57,6 @@ Diese Datei erklärt, wo was liegt und wie man neue Funktionen hinzufügt.
 ## Regeln
 
 - **Nur anzeigen, nichts automatisieren.** Keine Klicks, Bewegungen oder Makros. Die Hypixel-Regeln erlauben nur reine Anzeige.
-- SkyBlock-Begriffe bleiben Englisch (Bazaar, Slayer, Miniboss, …), Texte für Spieler auf Deutsch.
+- Texte für Spieler auf Englisch mit SkyBlock-Begriffen (Bazaar, Slayer Quest, Miniboss, Yang Glyph, …); Kommentare und Doku auf Deutsch.
+- Farben im Menü immer mit Standardwert anlegen: `Option.color(label, desc, get, set, default)` → der Farbwähler bekommt einen „Default“-Knopf.
 - Logik ohne Minecraft-Code (Tracker, NameParser, LootPool) möglichst in eigenen Klassen halten, damit man sie testen kann.

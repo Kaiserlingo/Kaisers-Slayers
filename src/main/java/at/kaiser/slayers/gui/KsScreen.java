@@ -45,7 +45,7 @@ public class KsScreen extends Screen {
 	private final List<HitBox> hits = new ArrayList<>();
 
 	// ---------- Farbwähler (Popup) ----------
-	private static final int PICK_W = 230, PICK_H = 150, SV_W = 120, SV_H = 90;
+	private static final int PICK_W = 230, PICK_H = 166, SV_W = 120, SV_H = 90;
 	private Option.Color picking;
 	private int pickOriginal;
 	private float pickH, pickS, pickV;
@@ -564,7 +564,6 @@ public class KsScreen extends Screen {
 				applyPick(def, true);
 			});
 		}
-		g.text(font, "§8" + Option.Color.hex(cur), x1 + 70, by + 4, 0xFFFFFFFF, false);
 	}
 
 	private void pickButton(GuiGraphicsExtractor g, int mx, int my, int x1, int y1, int x2, int y2, String text, int color, Runnable action) {

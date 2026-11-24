@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.1.0
+- **Boss-Erkennung repariert**: Hypixel zeigt jetzt „<Name>'s SLAYER BOSS“ statt „Spawned by“ – dein eigener Boss wird wieder sicher erkannt (Timer, Overlays, Glow)
+- **Miniboss-Tracer**: Linie vom Spieler direkt zum Miniboss (Farbe einstellbar, pro Slayer schaltbar)
+- **Neuer Farbwähler** für jede Farbe: Farbfeld + Farbton-Leiste, Hex-Eingabe, 16 Schnellfarben, alt/neu-Vorschau, „Default“; Änderungen sofort live in der Welt
+- „Phase Color“ (Voidgloom) ist jetzt standardmäßig aus, damit deine eigene Boss-Farbe gilt
+- **Profit-Tracker im Inventar**: neben Inventar und Kisten, mit Buttons für Session/Total, Instant Sell/Sell Offer und Reset (mit Bestätigung)
+- **[CALL MADDOX]**: klickbare Chat-Nachricht bei Quest Failed (führt erst beim Klick `/call slayer` aus; nicht im Rift)
+- **Während deines Bosses** werden Waypoints, Strahlen, Tracer und Highlights fremder Bosse und Minibosse ausgeblendet
+- **Kein Drop-Spoiler**: Drops am Boden werden standardmäßig nicht mehr hervorgehoben (und nie während der Gambling-Animation)
+- **Gambling**: alle Stile teilen sich dieselbe Bildschirmmitte, Ergebnis-Karte passt sich dem Inhalt an, Texte unter Icons sauber zentriert, Partikel hinter dem Text, Hinweis zeigt die echte Taste
+- **Sprache**: alle Texte im Spiel (Menü, HUD, Alerts, Chat, Befehle) auf Englisch mit SkyBlock-Begriffen
+
 ## 2.0.0
 - **Neues Menü** (/ks): eigene Oberfläche mit Seitenleiste, Suche, Schaltern, Reglern, Farbwahl, Übersicht aller Slayer, Profit-Tabelle
 - **HUD-Editor**: HUDs per Drag & Drop verschieben, mit dem Mausrad skalieren
