@@ -203,7 +203,6 @@ public final class GamblingAnimation {
 			active = false;
 			return;
 		}
-		if (mc.options.hideGui) return;
 		ModConfig cfg = KaisersSlayers.config();
 		float s = Math.max(0.5f, Math.min(2f, cfg.gamblingScale));
 		int screenW = mc.getWindow().getGuiScaledWidth();

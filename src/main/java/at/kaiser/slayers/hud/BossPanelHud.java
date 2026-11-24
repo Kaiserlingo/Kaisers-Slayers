@@ -25,7 +25,7 @@ public final class BossPanelHud {
 
 	public static void render(GuiGraphicsExtractor graphics, DeltaTracker delta) {
 		Minecraft mc = Minecraft.getInstance();
-		if (mc.player == null || mc.options.hideGui) return;
+		if (mc.player == null) return;
 		if (!KaisersSlayers.onSkyBlock() && !KaisersSlayers.forceHud()) return;
 		ModConfig cfg = KaisersSlayers.config();
 		long now = System.currentTimeMillis();

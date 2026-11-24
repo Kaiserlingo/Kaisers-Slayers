@@ -27,7 +27,6 @@ public final class AlertOverlay {
 	public static void render(GuiGraphicsExtractor graphics, DeltaTracker delta) {
 		if (title == null || System.currentTimeMillis() > until) return;
 		Minecraft mc = Minecraft.getInstance();
-		if (mc.options.hideGui) return;
 
 		int screenW = mc.getWindow().getGuiScaledWidth();
 		int screenH = mc.getWindow().getGuiScaledHeight();

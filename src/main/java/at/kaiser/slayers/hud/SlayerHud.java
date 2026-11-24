@@ -25,7 +25,7 @@ public final class SlayerHud {
 	public static void render(GuiGraphicsExtractor graphics, DeltaTracker delta) {
 		Minecraft mc = Minecraft.getInstance();
 		ModConfig cfg = KaisersSlayers.config();
-		if (!cfg.hudEnabled || mc.options.hideGui || mc.player == null) return;
+		if (!cfg.hudEnabled || mc.player == null) return; // F1 blendet HUD-Elemente automatisch aus
 		if (!KaisersSlayers.onSkyBlock() && !KaisersSlayers.forceHud()) return;
 
 		SlayerTracker tracker = KaisersSlayers.tracker();

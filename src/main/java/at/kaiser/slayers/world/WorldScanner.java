@@ -81,7 +81,7 @@ public final class WorldScanner {
 		List<Entity> mobs = new ArrayList<>();
 		for (Entity e : mc.level.entitiesForRendering()) {
 			if (e == player) continue;
-			if (e.getType() == EntityType.ARMOR_STAND) stands.add(e);
+			if (is(e, "armor_stand")) stands.add(e);
 			else mobs.add(e);
 		}
 
@@ -249,7 +249,7 @@ public final class WorldScanner {
 		int count = 0;
 		double nearest = -1;
 		for (Entity m : mobs) {
-			if (m.getType() != EntityType.TNT) continue;
+			if (!is(m, "tnt")) continue;
 			double d = m.distanceTo(player);
 			if (d > 12) continue;
 			count++;
@@ -283,7 +283,7 @@ public final class WorldScanner {
 		int brood = 0;
 		for (Entity m : mobs) {
 			if (m == boss) continue;
-			if (m.getType() != EntityType.SPIDER && m.getType() != EntityType.CAVE_SPIDER) continue;
+			if (!is(m, "spider") && !is(m, "cave_spider")) continue;
 			if (m.distanceTo(boss) > 8) continue;
 			brood++;
 			if (cfg.feature(SlayerType.SPIDER, SlayerFeature.SPIDER_BROOD_GLOW)) glow.put(m.getId(), 0xFFAA00);
@@ -457,6 +457,11 @@ public final class WorldScanner {
 	}
 
 	// ======================================================================= Helfer
+
+	/** Entity-Typ über die Registry-ID vergleichen, z. B. "armor_stand" */
+	private static boolean is(Entity e, String id) {
+		return EntityType.getKey(e.getType()).getPath().equals(id);
+	}
 
 	private static String nameOf(Entity e) {
 		if (!e.hasCustomName() || e.getCustomName() == null) return null;
