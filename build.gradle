@@ -53,3 +53,34 @@ jar {
 		rename { "${it}_kaisers-slayers" }
 	}
 }
+
+// ---- nur zum Nachschlagen der Minecraft-API (Branch "inspect") ----
+tasks.register('inspectApi') {
+	notCompatibleWithConfigurationCache("inspect only")
+	doLast {
+		def files = sourceSets.main.compileClasspath.files
+		def cp = files.join(File.pathSeparator)
+		def keywords = ['LevelExtraction', 'LevelRender', 'HudElement', 'VanillaHudElements', 'ClientEntityEvents', 'ScreenEvents',
+				'AttackEntityCallback', 'ClientWorldEvents', 'ClientBlockEntityEvents', 'ArmorStand.class', 'ClientLevelEvents', 'BlockStateUpdate', 'SubmitNodeCollector.class']
+		def found = []
+		files.findAll { it.name.endsWith('.jar') }.each { jar ->
+			new java.util.zip.ZipFile(jar).withCloseable { z ->
+				z.entries().each { e ->
+					if (keywords.any { k -> e.name.contains(k) } && e.name.endsWith('.class') && !e.name.contains('/impl/') && !e.name.contains('mixin')) {
+						println "FOUND ${e.name} in ${jar.name}"
+						found << e.name.replace('/', '.').replace('.class', '')
+					}
+				}
+			}
+		}
+		def classes = file('inspect-classes.txt').readLines().findAll { it.trim() } + found
+		classes.unique().each { c ->
+			def sout = new StringBuilder(), serr = new StringBuilder()
+			def p = ['javap', '-p', '-cp', cp, c].execute()
+			p.waitForProcessOutput(sout, serr)
+			println "===== ${c}"
+			println sout
+			if (serr) println "ERR: ${serr}"
+		}
+	}
+}
