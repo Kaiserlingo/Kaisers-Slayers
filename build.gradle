@@ -74,14 +74,14 @@ tasks.register('inspectApi') {
 		files.findAll { it.name.endsWith('.jar') }.each { jar ->
 			new java.util.zip.ZipFile(jar).withCloseable { z ->
 				z.entries().each { e ->
-					if (e.name.startsWith('net/minecraft/gizmos/') && e.name.endsWith('.class') && !e.name.contains('$')) found << e.name.replace('/', '.').replace('.class', '')
+					if (false && e.name.startsWith('net/minecraft/gizmos/') && e.name.endsWith('.class') && !e.name.contains('$')) found << e.name.replace('/', '.').replace('.class', '')
 				}
 			}
 		}
 		println "GIZMO CLASSES: " + found
 		(file('inspect-classes.txt').readLines().findAll { it.trim() } + found).unique().each { c ->
 			def sout = new StringBuilder(), serr = new StringBuilder()
-			def p = ['javap', '-cp', cp, c].execute()
+			def p = ['javap', '-c', '-p', '-cp', cp, c].execute()
 			p.waitForProcessOutput(sout, serr)
 			println "===== ${c}"
 			println sout
