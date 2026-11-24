@@ -675,12 +675,12 @@ public final class WorldScanner {
 		return EntityType.getKey(e.getType()).getPath();
 	}
 
-	private static double horizontalDist(Entity a, Entity b) {
+	static double horizontalDist(Entity a, Entity b) {
 		double dx = a.getX() - b.getX(), dz = a.getZ() - b.getZ();
 		return Math.sqrt(dx * dx + dz * dz);
 	}
 
-	private static Label closestLabel(List<Label> labels, Entity to, double maxH, double maxDy, Predicate<Label> filter) {
+	static Label closestLabel(List<Label> labels, Entity to, double maxH, double maxDy, Predicate<Label> filter) {
 		Label best = null;
 		double bestD = Double.MAX_VALUE;
 		for (Label l : labels) {
@@ -698,7 +698,7 @@ public final class WorldScanner {
 	}
 
 	/** Das Lebewesen direkt unter einem Namensschild (bevorzugt ein bestimmter Mob-Typ). */
-	private static Entity mobBelow(Entity label, List<Entity> mobs, String mobId, Entity player) {
+	static Entity mobBelow(Entity label, List<Entity> mobs, String mobId, Entity player) {
 		Entity best = null;
 		double bestD = Double.MAX_VALUE;
 		for (Entity m : mobs) {

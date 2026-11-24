@@ -43,88 +43,133 @@ public final class SlayerHud {
 		g.pose().popMatrix();
 	}
 
-	/** Zeichnet die Karte bei (0,0). Gibt die Höhe zurück (für den HUD-Editor). */
+	/** Eine Zelle im Statistik-Raster: Bezeichnung + Wert */
+	private record Cell(String label, String value) {}
+
+	/**
+	 * Zeichnet die Karte bei (0,0). Gibt die Höhe zurück (für den HUD-Editor).
+	 * Aufbau: Kopf (Icon, Boss, Level-Chip) · Status mit schlankem Balken · 2-spaltiges Statistik-Raster · Level/RNG-Zeilen.
+	 */
 	public static int draw(GuiGraphicsExtractor g, Font font, SlayerTracker t, ModConfig cfg, long now) {
 		SlayerType type = t.type();
 		SessionStats s = t.session();
 		LifetimeStats.Entry life = type != null ? t.lifetime().get(type) : null;
 		int accent = Ui.slayerAccent(type);
+		final int pad = 5;
 
-		List<String> rows = new ArrayList<>();
+		// ---------- Status ----------
+		String statusL, statusR = "";
 		double barPct = -1;
-		String barLabel = null;
-		int barFrom = accent, barTo = Ui.mix(accent, 0xFFFFFFFF, 0.4f);
-
+		int barCol = accent;
 		switch (t.phase()) {
 			case GRINDING -> {
+				statusL = "§7Spawning";
 				if (t.progressMax() > 0) {
-					barPct = t.progress() / t.progressMax();
-					barLabel = String.format(Locale.ROOT, "§f%.0f%% §7%s/%s %s", barPct * 100,
-							TextUtil.formatCoins(t.progress()), TextUtil.formatCoins(t.progressMax()), t.progressUnit());
+					barPct = Math.min(1, t.progress() / t.progressMax());
+					statusR = String.format(Locale.ROOT, "§f%s§7/%s §8%s §f%.0f%%", TextUtil.formatCoins(t.progress()),
+							TextUtil.formatCoins(t.progressMax()), t.progressUnit(), barPct * 100);
+				} else {
+					statusR = "§f" + TextUtil.formatDuration(now - t.questStart());
 				}
-				rows.add("§7Quest running for §f" + TextUtil.formatDuration(now - t.questStart()));
 			}
 			case BOSS_ALIVE -> {
 				long alive = t.bossSpawnTime() > 0 ? now - t.bossSpawnTime() : -1;
 				long limit = cfg.bossTimeLimitSec * 1000L;
 				int stand = KaisersSlayers.scanner().state().timeLeftSec;
 				long left = stand >= 0 ? stand * 1000L : (alive >= 0 ? limit - alive : -1);
+				boolean warn = left >= 0 && left <= cfg.bossTimeWarnSec * 1000L;
+				statusL = "§c§lBoss Alive";
 				if (left >= 0) {
-					barPct = Math.max(0, left / (double) limit);
-					barFrom = left <= cfg.bossTimeWarnSec * 1000L ? Ui.RED : 0xFFFFAA00;
-					barTo = left <= cfg.bossTimeWarnSec * 1000L ? 0xFFFF8080 : 0xFFFFE080;
-					barLabel = "§c§lBOSS §f" + TextUtil.formatDuration(Math.max(0, left)) + " left";
+					barPct = Math.max(0, Math.min(1, left / (double) limit));
+					barCol = warn ? Ui.RED : 0xFFFFAA00;
+					statusR = (warn ? "§c§l" : "§e") + "⏱ " + TextUtil.formatDuration(Math.max(0, left));
+				} else if (alive >= 0) {
+					statusR = "§f" + TextUtil.formatSeconds(alive);
 				}
-				rows.add(alive >= 0 ? "§7Fight: §f" + TextUtil.formatSeconds(alive) : "§7Fight in progress");
 			}
-			case BOSS_SLAIN -> rows.add("§a§l✔ Boss slain");
-			case NONE -> rows.add("§8No Slayer Quest active");
+			case BOSS_SLAIN -> statusL = "§a§l✔ Boss Slain";
+			default -> statusL = "§8No active Slayer Quest";
 		}
 
-		rows.add("§7Bosses §f" + s.kills + " §8· §f" + String.format(Locale.ROOT, "%.1f", s.killsPerHour()) + "/h §8· §f"
-				+ TextUtil.formatDuration(s.activeMs) + (s.fails > 0 ? " §8· §c" + s.fails + "✘" : ""));
-		if (!s.killTimes.isEmpty() || !s.spawnTimes.isEmpty()) {
-			rows.add("§7Avg Spawn §f" + (s.spawnTimes.isEmpty() ? "-" : TextUtil.formatSeconds(SessionStats.average(s.spawnTimes)))
-					+ " §8· §7Avg Kill §f" + (s.killTimes.isEmpty() ? "-" : TextUtil.formatSeconds(SessionStats.average(s.killTimes))));
-		}
-		if (life != null && life.bestKillMs > 0) rows.add("§7PB §a" + TextUtil.formatSeconds(life.bestKillMs));
+		// ---------- Raster ----------
+		List<Cell> cells = new ArrayList<>();
+		cells.add(new Cell("Bosses", "§f" + s.kills + (s.fails > 0 ? " §c" + s.fails + "✘" : "")));
+		cells.add(new Cell("Per Hour", "§f" + String.format(Locale.ROOT, "%.1f", s.killsPerHour())));
+		cells.add(new Cell("Avg Spawn", "§f" + (s.spawnTimes.isEmpty() ? "–" : TextUtil.formatSeconds(SessionStats.average(s.spawnTimes)))));
+		cells.add(new Cell("Avg Kill", "§f" + (s.killTimes.isEmpty() ? "–" : TextUtil.formatSeconds(SessionStats.average(s.killTimes)))));
+		cells.add(new Cell("PB", life != null && life.bestKillMs > 0 ? "§a" + TextUtil.formatSeconds(life.bestKillMs) : "§8–"));
+		cells.add(new Cell("Session", "§f" + TextUtil.formatDuration(s.activeMs)));
+
+		List<String> extra = new ArrayList<>();
 		if (cfg.showLevelEta && type != null && life != null && life.level >= 0) {
-			if (life.xpToNextLevel == 0) rows.add("§7" + type.levelName + " Slayer §a§lMAX");
+			if (life.xpToNextLevel == 0) extra.add("§7Level §a§lMAX");
 			else if (life.xpToNextLevel > 0) {
 				int perBoss = Math.max(1, type.xpPerBoss(t.tier()));
 				long bosses = (life.xpToNextLevel + perBoss - 1) / perBoss;
 				long avg = !s.questTimes.isEmpty() ? SessionStats.average(s.questTimes) : (s.kills > 0 ? s.activeMs / s.kills : 0);
-				rows.add("§7LVL " + (life.level + 1) + " §b" + TextUtil.formatCoins(life.xpToNextLevel) + " XP §8(" + bosses + " bosses"
-						+ (avg > 0 ? ", ~" + TextUtil.formatDuration(bosses * avg) : "") + ")");
+				extra.add("§7LVL " + (life.level + 1) + " §b" + TextUtil.formatCoins(life.xpToNextLevel) + " XP §8· " + bosses + " bosses"
+						+ (avg > 0 ? " · ~" + TextUtil.formatDuration(bosses * avg) : ""));
 			}
 		}
-		if (life != null && life.rngMeterXp >= 0) rows.add("§7RNG Meter §d" + TextUtil.formatInt(life.rngMeterXp) + " XP");
+		if (life != null && life.rngMeterXp >= 0) extra.add("§7RNG Meter §d" + TextUtil.formatInt(life.rngMeterXp) + " XP");
 
-		// ---------- Zeichnen ----------
-		int w = WIDTH;
-		for (String r : rows) w = Math.max(w, font.width(r) + 12);
+		// ---------- Größe ----------
+		String title = type != null ? "§l" + type.bossName + " " + TextUtil.toRoman(t.tier()) : "§lKaiser's Slayers";
+		String chip = life != null && life.level >= 0 ? "LVL " + life.level : "";
+		int chipW = chip.isEmpty() ? 0 : (int) (font.width(chip) * 0.75f) + 8;
+		int cellW = 0;
+		for (Cell c : cells) cellW = Math.max(cellW, font.width(c.label() + " ") + font.width(c.value()));
+		int w = Math.max(WIDTH, Math.max(pad * 2 + cellW * 2 + 10, 22 + font.width(title) + 8 + chipW + pad));
+		w = Math.max(w, pad * 2 + font.width(statusL) + 8 + font.width(statusR));
+		for (String e : extra) w = Math.max(w, pad * 2 + (int) (font.width(e) * 0.85f));
 		w = Math.min(w, 240);
 		lastWidth = w;
-		int h = 22 + (barPct >= 0 ? 16 : 0) + rows.size() * 10 + 4;
-		if (cfg.hudBackground) {
-			Ui.panel(g, 0, 0, w, h, 0xE0121218, Ui.argb(accent, 0x90));
-			Ui.hGradient(g, 1, 1, w - 1, 19, Ui.argb(accent, 0x60), 0x00121218);
-		}
-		Ui.icon(g, Ui.slayerIcon(type), 4, 2, 1.0f);
-		String title = type != null ? type.color + "§l" + type.bossName + " §7" + TextUtil.toRoman(t.tier()) : "§c§lKaiser's Slayers";
-		g.text(font, title, 23, 3, 0xFFFFFFFF, true);
-		String sub = life != null && life.level >= 0 ? "§8" + type.levelName + " Slayer LVL " + life.level : "§8Slayer Tracker";
-		Ui.text(g, font, sub, 23, 12, 0.75f, 0xFFFFFFFF, false);
+		int gridRows = (cells.size() + 1) / 2;
+		int h = 18 + 12 + (barPct >= 0 ? 5 : 0) + 4 + gridRows * 10 + (extra.isEmpty() ? 0 : 3 + extra.size() * 9) + 3;
 
-		int y = 22;
-		if (barPct >= 0) {
-			Ui.bar(g, 5, y, w - 10, 11, barPct, barFrom, barTo);
-			if (barLabel != null) Ui.centered(g, font, barLabel, w / 2f, y + 2, 0.75f, 0xFFFFFFFF, true);
-			y += 16;
+		// ---------- Zeichnen ----------
+		if (cfg.hudBackground) Ui.panel(g, 0, 0, w, h, 0xD8101015, Ui.argb(accent, 0x70));
+		// Kopf: Icon + Name in Slayer-Farbe, Level-Chip rechts, feine Akzent-Linie darunter
+		Ui.icon(g, Ui.slayerIcon(type), 3, 1, 1.0f);
+		g.text(font, (type != null ? type.color : "§c") + title, 22, 5, 0xFFFFFFFF, true);
+		if (!chip.isEmpty()) {
+			int cx2 = w - pad, cx1 = cx2 - chipW;
+			Ui.round(g, cx1, 4, cx2, 13, Ui.argb(accent, 0x60));
+			Ui.text(g, font, chip, cx1 + 4, 6f, 0.75f, 0xFFFFFFFF, false);
 		}
-		for (String r : rows) {
-			g.text(font, r, 6, y, 0xFFFFFFFF, true);
-			y += 10;
+		Ui.hGradient(g, pad, 17, w - pad, 18, accent, Ui.argb(accent, 0x00));
+
+		int y = 21;
+		g.text(font, statusL, pad, y, 0xFFFFFFFF, true);
+		if (!statusR.isEmpty()) Ui.rightText(g, font, statusR, w - pad, y, 0xFFFFFFFF);
+		y += 11;
+		if (barPct >= 0) {
+			g.fill(pad, y, w - pad, y + 3, 0x40FFFFFF);
+			int fw = (int) Math.round((w - pad * 2) * barPct);
+			if (fw > 0) Ui.hGradient(g, pad, y, pad + fw, y + 3, barCol, Ui.mix(barCol, 0xFFFFFFFF, 0.35f));
+			y += 5;
+		}
+		y += 3;
+
+		// 2-spaltiges Raster: Bezeichnung grau, Wert weiß
+		int colX2 = w / 2 + 2;
+		for (int i = 0; i < cells.size(); i++) {
+			Cell c = cells.get(i);
+			int cx = i % 2 == 0 ? pad : colX2;
+			int cy = y + (i / 2) * 10;
+			g.text(font, "§7" + c.label(), cx, cy, 0xFFFFFFFF, true);
+			int right = i % 2 == 0 ? colX2 - 6 : w - pad;
+			Ui.rightText(g, font, c.value(), right, cy, 0xFFFFFFFF);
+		}
+		y += gridRows * 10;
+		if (!extra.isEmpty()) {
+			y += 1;
+			g.fill(pad, y, w - pad, y + 1, 0x25FFFFFF);
+			y += 3;
+			for (String e : extra) {
+				Ui.text(g, font, e, pad, y, 0.85f, 0xFFFFFFFF, true);
+				y += 9;
+			}
 		}
 		return h;
 	}

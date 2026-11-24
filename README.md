@@ -34,6 +34,9 @@ Vollbild beim Boss-Kill: **Kisten-Öffnung, Slot-Machine, Glücksrad oder Karten
 
 Eigene Items für die Walzen: `config/kaisers_slayers.json` → `gamblingExtraItems`, z. B. `"zombie": ["Warden Heart|5"]` (Stufe 0–5).
 
+## Carries
+Für Carry-Verkäufer: `/ks carry add <Spieler> <Anzahl> [Preis]` fügt einen Kunden hinzu. Die Mod erkennt seine Bosse und zählt mit (0/10 → 1/10 …). Eigenes HUD mit Spielerkopf, Fortschritt, Live-Boss-Info und offenem Betrag. Korrigieren mit `/ks carry + / - / set`, Bezahlung mit `/ks carry paid <Spieler> <Coins>`.
+
 ## Befehle
 `/ks` Menü · `/ks hud` HUD-Editor · `/ks profit` Session/Gesamt · `/ks gamble <case|slots|wheel|cards>` Animation testen · `/ks test` Demo-Daten (HUDs außerhalb von Hypixel ansehen) · `/ks debug` Debug-Datei · `/ks lifetime` · `/ks reset` · `/ks help`
 

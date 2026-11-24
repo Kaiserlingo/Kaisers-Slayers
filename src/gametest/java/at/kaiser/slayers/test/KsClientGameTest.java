@@ -59,8 +59,8 @@ public class KsClientGameTest implements FabricClientGameTest {
 			ctx.setScreen(KsScreen::new);
 			ctx.waitTicks(10);
 			ctx.takeScreenshot("02_menu_overview");
-			int[][] pages = {{1, 3}, {4, 4}, {6, 6}, {10, 10}, {11, 11}};
-			String[] names = {"03_menu_alerts", "04_menu_profit", "05_menu_gambling", "06_menu_voidgloom", "07_menu_blaze"};
+			int[][] pages = {{1, 3}, {4, 4}, {7, 7}, {11, 11}, {12, 12}};
+			String[] names = {"03_menu_alerts", "04_menu_profit", "05_menu_carries", "06_menu_voidgloom", "07_menu_blaze"};
 			for (int i = 0; i < pages.length; i++) {
 				int cat = pages[i][0];
 				ctx.runOnClient(mc -> ((KsScreen) mc.gui.screen()).selectCategory(cat));

@@ -18,6 +18,7 @@ public class HudEditorScreen extends Screen {
 	private double grabX, grabY;
 	private final int[] slayerBox = new int[4];
 	private final int[] profitBox = new int[4];
+	private final int[] carryBox = new int[4];
 
 	public HudEditorScreen(Screen parent) {
 		super(Component.literal("HUD Editor"));
@@ -44,6 +45,11 @@ public class HudEditorScreen extends Screen {
 		SlayerType type = KaisersSlayers.tracker().type() != null ? KaisersSlayers.tracker().type() : SlayerType.ZOMBIE;
 		drawElement(g, cfg.profitHud, profitBox, mx, my, ProfitHud.lastWidth,
 				() -> ProfitHud.draw(g, font, type, ProfitHud.bucket(type, cfg), cfg), "Profit HUD");
+
+		// Carry-HUD (ohne Kunden mit Beispieldaten, damit man es platzieren kann)
+		var clients = KaisersSlayers.carries().isEmpty() ? at.kaiser.slayers.hud.CarryHud.sample() : KaisersSlayers.carries().clients();
+		drawElement(g, cfg.carryHud, carryBox, mx, my, at.kaiser.slayers.hud.CarryHud.lastWidth,
+				() -> at.kaiser.slayers.hud.CarryHud.draw(g, font, cfg, clients), "Carry HUD");
 
 		// Hilfe
 		int acc = 0xFF000000 | cfg.accentColor;
@@ -78,6 +84,7 @@ public class HudEditorScreen extends Screen {
 
 	private ModConfig.HudPos at(double mx, double my) {
 		ModConfig cfg = KaisersSlayers.config();
+		if (Ui.inside(mx, my, carryBox[0], carryBox[1], carryBox[2], carryBox[3])) return cfg.carryHud;
 		if (Ui.inside(mx, my, profitBox[0], profitBox[1], profitBox[2], profitBox[3])) return cfg.profitHud;
 		if (Ui.inside(mx, my, slayerBox[0], slayerBox[1], slayerBox[2], slayerBox[3])) return cfg.slayerHud;
 		return null;
@@ -140,6 +147,7 @@ public class HudEditorScreen extends Screen {
 			ModConfig cfg = KaisersSlayers.config();
 			cfg.slayerHud = new ModConfig.HudPos(0.005f, 0.06f);
 			cfg.profitHud = new ModConfig.HudPos(0.005f, 0.55f);
+			cfg.carryHud = new ModConfig.HudPos(0.70f, 0.30f);
 			cfg.save();
 			return true;
 		}

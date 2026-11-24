@@ -66,7 +66,7 @@ public final class SlayerCommands {
 				return 1;
 			}));
 		}
-		return root.then(gamble);
+		return root.then(gamble).then(CarryCommands.build());
 	}
 
 	private static int help(CommandContext<FabricClientCommandSource> ctx) {
@@ -79,6 +79,8 @@ public final class SlayerCommands {
 				"§e/ks reset §7– reset the session",
 				"§e/ks gamble <case|slots|wheel|cards> §7– test the animation",
 				"§e/ks prices §7– refresh Bazaar prices",
+				"§e/ks carry add <player> <amount> [price] §7– add a carry client (e.g. 10 carries, 2.5m each)",
+				"§e/ks carry §7– list clients · §e+ / - / set / paid / price / remove / clearfinished",
 				"§e/ks debug §7– debug file for bug reports",
 				"§e/ks test §7– show HUDs outside of SkyBlock",
 		};

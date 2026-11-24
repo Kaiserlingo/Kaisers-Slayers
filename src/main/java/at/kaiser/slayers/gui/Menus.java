@@ -20,6 +20,8 @@ public final class Menus {
 	public record Category(String name, ItemStack icon, int accent, SlayerType slayer, boolean dashboard, boolean profitTable) {}
 
 	public static final List<Category> CATEGORIES = new ArrayList<>();
+	/** Index der ersten Slayer-Kategorie in der Seitenleiste */
+	public static final int FIRST_SLAYER = 8;
 
 	static {
 		CATEGORIES.add(new Category("Overview", new ItemStack(Items.NETHER_STAR), 0xFFE74C3C, null, true, false));
@@ -29,6 +31,7 @@ public final class Menus {
 		CATEGORIES.add(new Category("Profit Tracker", new ItemStack(Items.GOLD_INGOT), 0xFFFFC234, null, false, true));
 		CATEGORIES.add(new Category("HUD", new ItemStack(Items.PAINTING), 0xFF9B59B6, null, false, false));
 		CATEGORIES.add(new Category("Gambling", new ItemStack(Items.EMERALD), 0xFF2ECC71, null, false, false));
+		CATEGORIES.add(new Category("Carries", new ItemStack(Items.PLAYER_HEAD), 0xFFFF55FF, null, false, false));
 		for (SlayerType t : SlayerType.values()) {
 			CATEGORIES.add(new Category(t.bossName, Ui.slayerIcon(t), Ui.slayerAccent(t), t, false, false));
 		}
@@ -48,6 +51,7 @@ public final class Menus {
 			case "Profit Tracker" -> profit();
 			case "HUD" -> hud();
 			case "Gambling" -> gambling();
+			case "Carries" -> carries();
 			default -> cat.slayer() != null ? slayer(cat.slayer()) : new ArrayList<>();
 		};
 		for (Option x : o) x.category = cat.name();
@@ -192,6 +196,46 @@ public final class Menus {
 		for (String s : List.of("CASE", "SLOTS", "WHEEL", "CARDS")) {
 			o.add(Option.action(styleName(s), "Plays the animation with a random drop.", "▶ Test", () -> preview(s)));
 		}
+		return o;
+	}
+
+	static List<Option> carries() {
+		List<Option> o = new ArrayList<>();
+		o.add(Option.header("Carry Tracker"));
+		o.add(Option.toggle("Carry Tracker", "Tracks the bosses of your carry clients: /ks carry add <player> <amount> [price per carry].",
+				() -> c().carryEnabled, v -> c().carryEnabled = v));
+		o.add(Option.toggle("Carry HUD", "HUD with all clients, player heads and progress (move it in the HUD Editor).",
+				() -> c().carryHud.enabled, v -> c().carryHud.enabled = v));
+		o.add(Option.toggle("Player Heads", "Shows the skin face of every client.", () -> c().carryShowHeads, v -> c().carryShowHeads = v));
+		o.add(Option.toggle("Progress Bars", "Thin progress bar under every client.", () -> c().carryShowBars, v -> c().carryShowBars = v));
+		o.add(Option.toggle("Live Boss Info", "While a client's boss is alive: boss name, HP and time left in the HUD.",
+				() -> c().carryShowBossInfo, v -> c().carryShowBossInfo = v));
+		o.add(Option.toggle("Payment Info", "Shows how much each client still owes (set with /ks carry price + paid).",
+				() -> c().carryShowPayment, v -> c().carryShowPayment = v));
+		o.add(Option.toggle("Compact Mode", "One line per client – for many clients at once.", () -> c().carryCompact, v -> c().carryCompact = v));
+		o.add(Option.color("HUD Accent", "Accent color of the Carry HUD.", () -> c().carryAccent, v -> c().carryAccent = v, 0xFF55FF));
+		o.add(Option.header("Client Bosses"));
+		o.add(Option.toggle("Highlight Client Bosses", "Bosses of your clients glow in their own color (also during your own boss).",
+				() -> c().carryGlow, v -> c().carryGlow = v));
+		o.add(Option.color("Client Boss Color", "Glow color of your clients' bosses.", () -> c().carryGlowColor, v -> c().carryGlowColor = v, 0xFF55FF));
+		o.add(Option.toggle("Boss Spawn Alert", "Alert when a client's boss spawns near you.", () -> c().carryBossAlert, v -> c().carryBossAlert = v));
+		o.add(Option.header("Messages"));
+		o.add(Option.toggle("Chat Message per Carry", "After every carry: progress in chat + a [Party] button that puts \"Name: 3/10 carries done\" into your chat box (you send it yourself).",
+				() -> c().carryChatMessage, v -> c().carryChatMessage = v));
+		o.add(Option.toggle("Carry Done Alert", "Big title + sound when a client's carries are finished.", () -> c().carryDoneAlert, v -> c().carryDoneAlert = v));
+		o.add(Option.toggle("Remove Finished Clients", "Removes a client automatically once all carries are done.",
+				() -> c().carryRemoveFinished, v -> c().carryRemoveFinished = v));
+		o.add(Option.header("Clients"));
+		o.add(Option.action("Remove Finished", "Removes all clients whose carries are done.", "Clear", () -> {
+			int n = KaisersSlayers.carries().clearFinished();
+			KaisersSlayers.saveCarries();
+			KaisersSlayers.chat("§7Removed §f" + n + " §7finished client(s).");
+		}));
+		o.add(Option.action("Remove All Clients", "Removes every carry client.", "Clear All", () -> {
+			KaisersSlayers.carries().clear();
+			KaisersSlayers.saveCarries();
+			KaisersSlayers.chat("§7All carry clients removed.");
+		}));
 		return o;
 	}
 

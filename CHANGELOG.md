@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.3.0
+- **Carry-Tracker** für Carry-Verkäufer:
+  - `/ks carry add <Spieler> <Anzahl> [Preis pro Carry]` (z. B. `/ks carry add Technoblade 10 2.5m`), dazu `+`, `-`, `set`, `price`, `paid`, `remove`, `clearfinished`, `clear`, `list`
+  - Erkennt die Bosse deiner Kunden („Name's SLAYER BOSS“) und zählt automatisch hoch, wenn sie sterben: 0/10 → 1/10 → …; abgelaufene Bosse (Quest failed) zählen nicht
+  - **Carry-HUD** mit Spielerkopf, Fortschritt, Balken, Live-Boss-Info (HP, Zeit), offenem Betrag; Kompakt-Modus, Akzentfarbe, im HUD-Editor verschiebbar
+  - Kunden-Bosse leuchten in eigener Farbe, Alert beim Spawn, Chat-Zeile pro Carry mit **[Party]**-Knopf (legt die Nachricht nur in die Chat-Leiste), Alert + Sound wenn fertig, Ø-Kill-Zeit pro Kunde
+  - Eigene Menü-Seite „Carries“
+- **Slayer-HUD neu**: Kopf mit Level-Chip, Status mit schlankem Balken, 2-spaltiges Statistik-Raster, Level-/RNG-Zeilen
+
 ## 2.2.0
 - **Mob Kill Coins** im Profit-Tracker: Coins, die Mobs während des Quests in die Purse geben (Verkäufe, Bank und Menüs werden ignoriert)
 - **Nur eigene Minibosse**: Highlight, Strahl, Tracer und Waypoint nur für Minibosse aus deiner Quest (Zuordnung über die Chat-Meldung „SLAYER MINI-BOSS … HAS SPAWNED!“), abschaltbar

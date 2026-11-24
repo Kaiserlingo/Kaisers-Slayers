@@ -62,6 +62,8 @@ public class KaisersSlayers implements ClientModInitializer {
 	private static final SlayerTracker TRACKER = new SlayerTracker();
 	private static final PriceService PRICES = new PriceService();
 	private static final WorldScanner SCANNER = new WorldScanner();
+	private static final at.kaiser.slayers.carry.CarryManager CARRIES = new at.kaiser.slayers.carry.CarryManager();
+	private static final at.kaiser.slayers.world.CarryScanner CARRY_SCANNER = new at.kaiser.slayers.world.CarryScanner();
 	private static Screen pendingScreen;
 	private static int soonAlertedQuest = -1;
 	private static boolean onSkyBlock;
@@ -90,6 +92,7 @@ public class KaisersSlayers implements ClientModInitializer {
 		config = ModConfig.load();
 		TRACKER.setLifetime(ModConfig.loadStats());
 		TRACKER.profit().setSaved(ModConfig.loadProfit());
+		CARRIES.setSaved(ModConfig.loadCarries());
 		TRACKER.setCostMultiplier(config.costMultiplier);
 		TRACKER.setListener(new Alerts());
 
@@ -105,6 +108,7 @@ public class KaisersSlayers implements ClientModInitializer {
 		// --- HUD ---
 		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT, id("slayer_hud"), SlayerHud::render);
 		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT, id("profit_hud"), ProfitHud::render);
+		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT, id("carry_hud"), at.kaiser.slayers.hud.CarryHud::render);
 		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT, id("boss_panel"), BossPanelHud::render);
 		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT, id("alert"), AlertOverlay::render);
 		HudElementRegistry.addLast(id("gambling"), GamblingAnimation::render);
@@ -147,6 +151,7 @@ public class KaisersSlayers implements ClientModInitializer {
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
 			saveAll();
 			SCANNER.reset();
+			CARRY_SCANNER.reset();
 		});
 		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> saveAll());
 
@@ -199,6 +204,13 @@ public class KaisersSlayers implements ClientModInitializer {
 			} catch (Exception e) {
 				LOGGER.warn("Fehler im Welt-Scanner", e);
 			}
+			if (config.carryEnabled) {
+				try {
+					CARRY_SCANNER.scan(mc, CARRIES, config, CARRY_EVENTS, now);
+				} catch (Exception e) {
+					LOGGER.warn("Fehler im Carry-Scanner", e);
+				}
+			}
 		}
 
 		// Scoreboard 4x pro Sekunde auswerten
@@ -215,6 +227,7 @@ public class KaisersSlayers implements ClientModInitializer {
 		checkSoonSpawn();
 
 		if (tickCounter % 200 == 0 && TRACKER.consumeDirty()) saveAll();
+		if (CARRIES.consumeDirty()) ModConfig.saveCarries(CARRIES.saved());
 	}
 
 	/** "Boss spawnt gleich" – einmal pro Quest, wenn der Fortschritt die Schwelle erreicht. */
@@ -258,6 +271,7 @@ public class KaisersSlayers implements ClientModInitializer {
 		TRACKER.consumeDirty();
 		ModConfig.saveStats(TRACKER.lifetime());
 		ModConfig.saveProfit(TRACKER.profit().saved());
+		ModConfig.saveCarries(CARRIES.saved());
 	}
 
 	/** Klickbare Nachricht: öffnet per Klick den Anruf bei Maddox (/call slayer). Der Spieler muss selbst klicken. */
@@ -329,6 +343,14 @@ public class KaisersSlayers implements ClientModInitializer {
 	public static SlayerTracker tracker() { return TRACKER; }
 	public static PriceService prices() { return PRICES; }
 	public static WorldScanner scanner() { return SCANNER; }
+	public static at.kaiser.slayers.carry.CarryManager carries() { return CARRIES; }
+	public static at.kaiser.slayers.world.CarryScanner carryScanner() { return CARRY_SCANNER; }
+
+	/** Carry-Kunden speichern (nach Befehlen sofort) */
+	public static void saveCarries() {
+		CARRIES.consumeDirty();
+		ModConfig.saveCarries(CARRIES.saved());
+	}
 	public static boolean onSkyBlock() { return onSkyBlock; }
 	public static boolean forceHud() { return forceHud; }
 
@@ -346,6 +368,53 @@ public class KaisersSlayers implements ClientModInitializer {
 
 	public static boolean isDemo() {
 		return demo;
+	}
+
+	private static final CarryEvents CARRY_EVENTS = new CarryEvents();
+
+	/** Carry-Ereignisse: Chat-Nachricht mit klickbaren Knöpfen, Alerts, Sounds */
+	private static final class CarryEvents implements at.kaiser.slayers.world.CarryScanner.Listener {
+		@Override
+		public void onClientBossSpawned(String client, String bossName) {
+			if (config.carryBossAlert) {
+				Feedback.alert("§d§lCARRY BOSS!", "§f" + client + "§7's " + (bossName.isEmpty() ? "boss" : bossName) + " spawned", 1500,
+						SoundEvents.NOTE_BLOCK_PLING.value(), 1.4f);
+			}
+		}
+
+		@Override
+		public void onCarryCounted(at.kaiser.slayers.carry.CarryManager.Client c, long fightMs) {
+			saveCarries();
+			if (config.carryChatMessage) {
+				String time = fightMs > 0 ? " §8(" + TextUtil.formatSeconds(fightMs) + ")" : "";
+				carryChat("§d[Carry] §f" + c.name + " §7– " + (c.finished() ? "§a§l" : "§e") + c.done + "/" + c.total + time + " ",
+						"[Party]", "/pc " + c.name + ": " + c.done + "/" + c.total + " carries done",
+						"§7Puts a progress message into your chat box\n§8You still have to press Enter yourself");
+			}
+			if (c.finished()) {
+				if (config.carryDoneAlert) {
+					Feedback.alert("§a§lCARRY DONE!", "§f" + c.name + " §7– " + c.total + "/" + c.total, 3000,
+							SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.0f);
+				}
+				if (c.price > 0 && c.due() > 0) chat("§6" + c.name + " §7still owes §6" + TextUtil.formatCoins(c.due()) + " coins§7.");
+				if (config.carryRemoveFinished) {
+					CARRIES.remove(c.name);
+					saveCarries();
+				}
+			} else {
+				Feedback.sound(SoundEvents.EXPERIENCE_ORB_PICKUP, 1.3f);
+			}
+		}
+	}
+
+	/** Chat-Zeile mit Knopf, der einen Text in die Chat-Leiste legt (nicht abschickt) */
+	public static void carryChat(String text, String button, String suggest, String hover) {
+		Minecraft mc = Minecraft.getInstance();
+		if (mc.player == null) return;
+		MutableComponent btn = Component.literal("§b" + button).withStyle(st -> st
+				.withClickEvent(new ClickEvent.SuggestCommand(suggest))
+				.withHoverEvent(new HoverEvent.ShowText(Component.literal(hover))));
+		mc.player.sendSystemMessage(Component.literal(text).append(btn));
 	}
 
 	/** Reagiert auf Ereignisse des Trackers mit Einblendungen, Sounds und Chat-Nachrichten. */

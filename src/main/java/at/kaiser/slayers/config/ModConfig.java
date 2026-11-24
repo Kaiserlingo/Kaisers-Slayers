@@ -26,6 +26,7 @@ public class ModConfig {
 	private static final Path CONFIG_FILE = DIR.resolve("kaisers_slayers.json");
 	private static final Path STATS_FILE = DIR.resolve("kaisers_slayers_stats.json");
 	private static final Path PROFIT_FILE = DIR.resolve("kaisers_slayers_profit.json");
+	private static final Path CARRY_FILE = DIR.resolve("kaisers_slayers_carries.json");
 
 	/** Position eines HUD-Elements: x/y als Anteil der Bildschirmgröße (0..1), damit es bei jeder Auflösung passt. */
 	public static class HudPos {
@@ -109,6 +110,22 @@ public class ModConfig {
 	/** Profit-Tracker mit Buttons im Inventar / in Kisten anzeigen */
 	public boolean inventoryTracker = true;
 
+	// ================= Carries =================
+	public boolean carryEnabled = true;
+	public HudPos carryHud = new HudPos(0.70f, 0.30f);
+	public boolean carryShowHeads = true;
+	public boolean carryShowBars = true;
+	public boolean carryShowPayment = true;
+	public boolean carryShowBossInfo = true;
+	public boolean carryCompact = false;
+	public boolean carryGlow = true;
+	public int carryGlowColor = 0xFF55FF;
+	public boolean carryChatMessage = true;
+	public boolean carryBossAlert = true;
+	public boolean carryDoneAlert = true;
+	public boolean carryRemoveFinished = false;
+	public int carryAccent = 0xFF55FF;
+
 	// ================= Gambling =================
 	public boolean gamblingEnabled = true;
 	/** CASE, SLOTS, WHEEL, CARDS oder RANDOM */
@@ -186,6 +203,7 @@ public class ModConfig {
 		if (hiddenItems == null) hiddenItems = new ArrayList<>();
 		if (slayerHud == null) slayerHud = new HudPos(0.005f, 0.06f);
 		if (profitHud == null) profitHud = new HudPos(0.005f, 0.55f);
+		if (carryHud == null) carryHud = new HudPos(0.70f, 0.30f);
 		if (gamblingStyle == null) gamblingStyle = "CASE";
 		if (gamblingTrigger == null) gamblingTrigger = "ALWAYS";
 		if (profitMode == null) profitMode = "SESSION";
@@ -226,6 +244,14 @@ public class ModConfig {
 
 	public static void saveProfit(ProfitTracker.Saved s) {
 		write(PROFIT_FILE, s);
+	}
+
+	public static at.kaiser.slayers.carry.CarryManager.Saved loadCarries() {
+		return read(CARRY_FILE, at.kaiser.slayers.carry.CarryManager.Saved.class);
+	}
+
+	public static void saveCarries(at.kaiser.slayers.carry.CarryManager.Saved s) {
+		write(CARRY_FILE, s);
 	}
 
 	public static Path debugFile() {

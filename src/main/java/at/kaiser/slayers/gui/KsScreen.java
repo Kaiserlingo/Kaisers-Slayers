@@ -129,7 +129,7 @@ public class KsScreen extends Screen {
 		int cy = sideTop + 2 - (int) sideScroll;
 		for (int i = 0; i < Menus.CATEGORIES.size(); i++) {
 			Menus.Category c = Menus.CATEGORIES.get(i);
-			if (i == 7) {
+			if (i == Menus.FIRST_SLAYER) {
 				Ui.text(g, font, "§8SLAYER", x1 + 10, cy + 3, 0.7f, 0xFFFFFFFF, false);
 				g.fill(x1 + 38, cy + 5, sbx2 - 8, cy + 6, 0x20FFFFFF);
 				cy += 10;
@@ -437,7 +437,7 @@ public class KsScreen extends Screen {
 					cx + 8, cy + 34, 0.75f, 0xFFFFFFFF, false);
 			Ui.text(g, font, "§7Total profit " + (profit >= 0 ? "§6" : "§c") + TextUtil.formatCoins(profit)
 					+ (e.rngMeterXp >= 0 ? "   §7RNG §d" + TextUtil.formatCoins(e.rngMeterXp) : ""), cx + 8, cy + 45, 0.75f, 0xFFFFFFFF, false);
-			final int idx = 7 + i;
+			final int idx = Menus.FIRST_SLAYER + i;
 			hits.add(new HitBox(cx, cy, cx + cw, cy + ch, () -> select(idx), null));
 		}
 		int rows = (types.length + cols - 1) / cols;
