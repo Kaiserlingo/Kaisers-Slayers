@@ -50,7 +50,7 @@ public final class AlertOverlay {
 		Ui.hGradient(g, sw / 2 - 160, cy - stripH / 2 - 4, sw / 2, cy - stripH / 2 - 3, 0x00E74C3C, Ui.argb(0xE74C3C, alpha));
 		Ui.hGradient(g, sw / 2, cy - stripH / 2 - 4, sw / 2 + 160, cy - stripH / 2 - 3, Ui.argb(0xE74C3C, alpha), 0x00E74C3C);
 
-		float s = scale * pop;
+		float s = Math.min(scale, sw * 0.85f / Math.max(1, tw)) * pop;
 		Ui.text(g, mc.font, title, sw / 2f - tw * s / 2f, cy - mc.font.lineHeight * s / 2f - 2, s, Ui.argb(0xFFFFFF, alpha), true);
 		if (subtitle != null && !subtitle.isEmpty()) {
 			Ui.centered(g, mc.font, subtitle, sw / 2f, cy + mc.font.lineHeight * scale / 2f + 1, 1.0f, Ui.argb(0xFFFFFF, alpha), true);

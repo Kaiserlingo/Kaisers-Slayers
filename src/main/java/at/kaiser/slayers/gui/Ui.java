@@ -55,8 +55,20 @@ public final class Ui {
 	public static void panel(GuiGraphicsExtractor g, int x1, int y1, int x2, int y2, int color, int border) {
 		g.fill(x1 - 2, y1 + 3, x2 + 2, y2 + 4, 0x30000000);
 		g.fill(x1 - 1, y1 + 2, x2 + 1, y2 + 2, 0x40000000);
-		round(g, x1 - 1, y1 - 1, x2 + 1, y2 + 1, border);
 		round(g, x1, y1, x2, y2, color);
+		// Rand als 1-px-Linie (nicht flächig, sonst schimmert er durch halbtransparente Panels)
+		g.fill(x1 + 2, y1 - 1, x2 - 2, y1, border);
+		g.fill(x1 + 2, y2, x2 - 2, y2 + 1, border);
+		g.fill(x1 - 1, y1 + 2, x1, y2 - 2, border);
+		g.fill(x2, y1 + 2, x2 + 1, y2 - 2, border);
+		g.fill(x1, y1, x1 + 2, y1 + 1, border);
+		g.fill(x1, y1, x1 + 1, y1 + 2, border);
+		g.fill(x2 - 2, y1, x2, y1 + 1, border);
+		g.fill(x2 - 1, y1, x2, y1 + 2, border);
+		g.fill(x1, y2 - 1, x1 + 2, y2, border);
+		g.fill(x1, y2 - 2, x1 + 1, y2, border);
+		g.fill(x2 - 2, y2 - 1, x2, y2, border);
+		g.fill(x2 - 1, y2 - 2, x2, y2, border);
 	}
 
 	/** Horizontaler Farbverlauf (für Balken und Header) */

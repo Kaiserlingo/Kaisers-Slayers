@@ -44,7 +44,13 @@ public final class BossPanelHud {
 		// ---------- Boss-HP-Leiste ----------
 		int arrowsY = 22;
 		if (fight && cfg.feature(type, SlayerFeature.BOSS_BAR)) {
-			int bw = 200, bx = sw / 2 - bw / 2, by = 22;
+			// nicht mit dem Slayer-HUD überlappen
+			ModConfig.HudPos hp0 = cfg.slayerHud;
+			int hudRight = hp0.enabled ? Math.round(hp0.x * sw + SlayerHud.WIDTH * hp0.scale) + 10 : 0;
+			int bw = Math.min(200, sw - 16);
+			int bx = Math.max(sw / 2 - bw / 2, hudRight);
+			if (bx + bw > sw - 8) bw = Math.max(110, sw - 8 - bx);
+			int by = 22;
 			double pct = st.hpPercent();
 			Ui.panel(g, bx - 4, by - 4, bx + bw + 4, by + 22, 0xD0101016, Ui.argb(type.defaultGlow, 0xA0));
 			String name = type.color + "§l" + type.bossName + " " + TextUtil.toRoman(tracker.tier());
@@ -57,7 +63,7 @@ public final class BossPanelHud {
 			int from = pct > 0.6 ? 0xFF2ECC71 : pct > 0.3 ? 0xFFF1C40F : 0xFFE74C3C;
 			Ui.bar(g, bx, by + 9, bw, 9, pct < 0 ? 1 : pct, from, Ui.mix(from, 0xFFFFFFFF, 0.35f));
 			String hp = st.hp >= 0 ? TextUtil.formatCoins(st.hp) + "❤" + (pct >= 0 ? String.format(Locale.ROOT, "  %.0f%%", pct * 100) : "") : "? ❤";
-			Ui.centered(g, mc.font, "§f" + hp, sw / 2f, by + 10, 0.75f, 0xFFFFFFFF, true);
+			Ui.centered(g, mc.font, "§f" + hp, bx + bw / 2f, by + 10, 0.75f, 0xFFFFFFFF, true);
 			arrowsY = by + 30;
 		}
 
