@@ -168,7 +168,7 @@ public final class ProfitHud {
 		if (edit != null) h += 20;
 
 		if (cfg.hudBackground || edit != null) {
-			Ui.panel(g, 0, 0, w, h, 0xD8101015, edit != null ? 0xC0FFC234 : 0x60FFC234);
+			Ui.panel(g, 0, 0, w, h, edit != null ? 0xF8101015 : 0xD8101015, edit != null ? 0xC0FFC234 : 0x60FFC234);
 		}
 
 		// ---------- Titel ----------
