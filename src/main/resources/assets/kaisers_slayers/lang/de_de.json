@@ -1,5 +1,6 @@
 {
   "key.category.kaisers_slayers.main": "Kaiser's Slayers",
-  "key.kaisers_slayers.toggle_hud": "Slayer-HUD ein/aus",
-  "key.kaisers_slayers.post_stats": "Session-Statistik im Chat zeigen"
+  "key.kaisers_slayers.menu": "Menü öffnen",
+  "key.kaisers_slayers.toggle_hud": "HUDs ein/aus",
+  "key.kaisers_slayers.skip_gambling": "Gambling überspringen"
 }

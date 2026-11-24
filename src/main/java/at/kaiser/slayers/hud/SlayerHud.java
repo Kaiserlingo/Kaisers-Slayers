@@ -2,7 +2,8 @@ package at.kaiser.slayers.hud;
 
 import at.kaiser.slayers.KaisersSlayers;
 import at.kaiser.slayers.config.ModConfig;
-import at.kaiser.slayers.price.PriceService;
+import at.kaiser.slayers.gambling.GamblingAnimation;
+import at.kaiser.slayers.gui.Ui;
 import at.kaiser.slayers.slayer.LifetimeStats;
 import at.kaiser.slayers.slayer.SessionStats;
 import at.kaiser.slayers.slayer.SlayerTracker;
@@ -10,158 +11,116 @@ import at.kaiser.slayers.slayer.SlayerType;
 import at.kaiser.slayers.util.TextUtil;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
-/** Das Slayer-HUD links am Bildschirm. */
+/** Das Slayer-HUD: Quest, Fortschritt, Zeiten, Level-Prognose – als Karte im Kaiser's-Slayers-Design. */
 public final class SlayerHud {
+	public static final int WIDTH = 168;
+
 	private SlayerHud() {}
 
-	public static void render(GuiGraphicsExtractor graphics, DeltaTracker delta) {
+	public static void render(GuiGraphicsExtractor g, DeltaTracker delta) {
 		Minecraft mc = Minecraft.getInstance();
 		ModConfig cfg = KaisersSlayers.config();
-		if (!cfg.hudEnabled || mc.player == null) return; // F1 blendet HUD-Elemente automatisch aus
+		if (!cfg.slayerHud.enabled || mc.player == null || GamblingAnimation.hidesHud()) return;
 		if (!KaisersSlayers.onSkyBlock() && !KaisersSlayers.forceHud()) return;
+		SlayerTracker t = KaisersSlayers.tracker();
+		if (cfg.hudOnlyWhenActive && t.phase() == SlayerTracker.Phase.NONE && t.session().kills == 0) return;
 
-		SlayerTracker tracker = KaisersSlayers.tracker();
-		if (cfg.hudOnlyWhenActive && tracker.phase() == SlayerTracker.Phase.NONE
-				&& tracker.session().kills == 0) return;
-
-		List<String> lines = buildLines(tracker, cfg, KaisersSlayers.prices(), System.currentTimeMillis());
-
-		int width = 0;
-		for (String l : lines) width = Math.max(width, mc.font.width(l));
-		int lineH = mc.font.lineHeight + 1;
-		int height = lines.size() * lineH;
-
-		graphics.pose().pushMatrix();
-		graphics.pose().translate(cfg.hudX, cfg.hudY);
-		graphics.pose().scale(cfg.hudScale, cfg.hudScale);
-		if (cfg.hudBackground) {
-			graphics.fill(-3, -3, width + 3, height + 2, 0x90000000);
-			graphics.fill(-3, -3, -2, height + 2, 0xFFC0392B); // roter Akzentstreifen
-		}
-		int y = 0;
-		for (String l : lines) {
-			graphics.text(mc.font, l, 0, y, 0xFFFFFFFF, true);
-			y += lineH;
-		}
-		graphics.pose().popMatrix();
+		int x = Math.round(cfg.slayerHud.x * mc.getWindow().getGuiScaledWidth());
+		int y = Math.round(cfg.slayerHud.y * mc.getWindow().getGuiScaledHeight());
+		g.pose().pushMatrix();
+		g.pose().translate(x, y);
+		g.pose().scale(cfg.slayerHud.scale, cfg.slayerHud.scale);
+		draw(g, mc.font, t, cfg, System.currentTimeMillis());
+		g.pose().popMatrix();
 	}
 
-	/** Baut die HUD-Zeilen (mit §-Farbcodes). Öffentlich, damit /kslayers stats sie auch nutzen kann. */
-	public static List<String> buildLines(SlayerTracker t, ModConfig cfg, PriceService prices, long now) {
-		List<String> out = new ArrayList<>();
-		out.add("§c§lKaiser's Slayers");
-
+	/** Zeichnet die Karte bei (0,0). Gibt die Höhe zurück (für den HUD-Editor). */
+	public static int draw(GuiGraphicsExtractor g, Font font, SlayerTracker t, ModConfig cfg, long now) {
 		SlayerType type = t.type();
 		SessionStats s = t.session();
 		LifetimeStats.Entry life = type != null ? t.lifetime().get(type) : null;
+		int accent = Ui.slayerAccent(type);
 
-		// --- Quest-Zeile ---
-		if (type != null) {
-			String lvl = life != null && life.level >= 0 ? " §7(" + type.levelName + " LVL " + life.level + ")" : "";
-			out.add(type.color + type.bossName + " " + TextUtil.toRoman(t.tier()) + lvl);
-		}
+		List<String> rows = new ArrayList<>();
+		double barPct = -1;
+		String barLabel = null;
+		int barFrom = accent, barTo = Ui.mix(accent, 0xFFFFFFFF, 0.4f);
+
 		switch (t.phase()) {
 			case GRINDING -> {
-				String pct = t.progressMax() > 0
-						? String.format(Locale.ROOT, "%.0f%%", 100.0 * t.progress() / t.progressMax()) : "?";
-				String detail = t.progressMax() > 0
-						? " §8(" + TextUtil.formatInt((long) t.progress()) + "/" + TextUtil.formatInt((long) t.progressMax()) + " " + t.progressUnit() + ")"
-						: "";
-				out.add("§7Grinding: §e" + pct + detail + " §8| §f" + TextUtil.formatDuration(now - t.questStart()));
+				if (t.progressMax() > 0) {
+					barPct = t.progress() / t.progressMax();
+					barLabel = String.format(Locale.ROOT, "§f%.0f%% §7%s/%s %s", barPct * 100,
+							TextUtil.formatCoins(t.progress()), TextUtil.formatCoins(t.progressMax()), t.progressUnit());
+				}
+				rows.add("§7Quest läuft seit §f" + TextUtil.formatDuration(now - t.questStart()));
 			}
 			case BOSS_ALIVE -> {
-				if (t.bossSpawnTime() > 0) {
-					long alive = now - t.bossSpawnTime();
-					long left = cfg.bossTimeLimitSec * 1000L - alive;
-					String leftColor = left <= cfg.bossTimeWarnSec * 1000L ? "§c§l" : "§a";
-					out.add("§c§lBoss lebt! §f" + TextUtil.formatSeconds(alive)
-							+ " §8| §7Limit: " + leftColor + TextUtil.formatDuration(Math.max(0, left)));
-				} else {
-					out.add("§c§lBoss lebt! §8(Spawn nicht erfasst)");
+				long alive = t.bossSpawnTime() > 0 ? now - t.bossSpawnTime() : -1;
+				long limit = cfg.bossTimeLimitSec * 1000L;
+				int stand = KaisersSlayers.scanner().state().timeLeftSec;
+				long left = stand >= 0 ? stand * 1000L : (alive >= 0 ? limit - alive : -1);
+				if (left >= 0) {
+					barPct = Math.max(0, left / (double) limit);
+					barFrom = left <= cfg.bossTimeWarnSec * 1000L ? Ui.RED : 0xFFFFAA00;
+					barTo = left <= cfg.bossTimeWarnSec * 1000L ? 0xFFFF8080 : 0xFFFFE080;
+					barLabel = "§c§lBOSS §f" + TextUtil.formatDuration(Math.max(0, left)) + " übrig";
 				}
+				rows.add(alive >= 0 ? "§7Kampf: §f" + TextUtil.formatSeconds(alive) : "§7Kampf läuft");
 			}
-			case BOSS_SLAIN -> out.add("§a§lBoss besiegt! §7Neuen Quest starten");
-			case NONE -> out.add("§8Kein Slayer-Quest aktiv");
+			case BOSS_SLAIN -> rows.add("§a§l✔ Boss besiegt");
+			case NONE -> rows.add("§8Kein Slayer-Quest aktiv");
 		}
 
-		// --- Session ---
-		out.add("§7Session: §f" + s.kills + (s.kills == 1 ? " Boss" : " Bosse") + " §8| §f"
-				+ String.format(Locale.ROOT, "%.1f", s.killsPerHour()) + "/h §8| §f" + TextUtil.formatDuration(s.activeMs)
-				+ (s.fails > 0 ? " §8| §c" + s.fails + " failed" : ""));
+		rows.add("§7Bosse §f" + s.kills + " §8· §f" + String.format(Locale.ROOT, "%.1f", s.killsPerHour()) + "/h §8· §f"
+				+ TextUtil.formatDuration(s.activeMs) + (s.fails > 0 ? " §8· §c" + s.fails + "✘" : ""));
 		if (!s.killTimes.isEmpty() || !s.spawnTimes.isEmpty()) {
-			out.add("§7Ø Spawn: §f" + (s.spawnTimes.isEmpty() ? "-" : TextUtil.formatSeconds(SessionStats.average(s.spawnTimes)))
-					+ " §8| §7Ø Kill: §f" + (s.killTimes.isEmpty() ? "-" : TextUtil.formatSeconds(SessionStats.average(s.killTimes)))
-					+ (life != null && life.bestKillMs > 0 ? " §8| §7Best: §a" + TextUtil.formatSeconds(life.bestKillMs) : ""));
+			rows.add("§7Ø Spawn §f" + (s.spawnTimes.isEmpty() ? "-" : TextUtil.formatSeconds(SessionStats.average(s.spawnTimes)))
+					+ " §8· §7Ø Kill §f" + (s.killTimes.isEmpty() ? "-" : TextUtil.formatSeconds(SessionStats.average(s.killTimes))));
 		}
-
-		// --- Profit ---
-		if (cfg.showProfit && s.kills > 0) {
-			double dropValue = dropValue(s, prices, cfg);
-			double profit = dropValue - s.coinCost;
-			double hours = s.activeMs / 3_600_000.0;
-			String perHour = hours > 0.01 ? " §8(§6" + TextUtil.formatCoins(profit / hours) + "/h§8)" : "";
-			out.add("§7Profit: " + (profit >= 0 ? "§6" : "§c") + TextUtil.formatCoins(profit) + perHour);
-			out.add("§8Drops " + TextUtil.formatCoins(dropValue) + " · Kosten " + TextUtil.formatCoins(s.coinCost)
-					+ (prices.hasData() ? "" : " · §cPreise laden..."));
-		}
-
-		// --- Level / RNG ---
+		if (life != null && life.bestKillMs > 0) rows.add("§7Rekord §a" + TextUtil.formatSeconds(life.bestKillMs));
 		if (cfg.showLevelEta && type != null && life != null && life.level >= 0) {
-			if (life.xpToNextLevel == 0) {
-				out.add("§7" + type.levelName + " Slayer: §aLVL MAX");
-			} else if (life.xpToNextLevel > 0) {
-				int perBoss = type.xpPerBoss(t.tier());
-				String eta = "";
-				if (perBoss > 0) {
-					long bosses = (life.xpToNextLevel + perBoss - 1) / perBoss;
-					long avgQuest = !s.questTimes.isEmpty() ? SessionStats.average(s.questTimes)
-							: (s.kills > 0 ? s.activeMs / s.kills : 0);
-					eta = " §8(~" + bosses + " Bosse" + (avgQuest > 0 ? ", " + TextUtil.formatDuration(bosses * avgQuest) : "") + ")";
-				}
-				out.add("§7LVL " + (life.level + 1) + " in: §b" + TextUtil.formatInt(life.xpToNextLevel) + " XP" + eta);
+			if (life.xpToNextLevel == 0) rows.add("§7" + type.levelName + " Slayer §a§lMAX");
+			else if (life.xpToNextLevel > 0) {
+				int perBoss = Math.max(1, type.xpPerBoss(t.tier()));
+				long bosses = (life.xpToNextLevel + perBoss - 1) / perBoss;
+				long avg = !s.questTimes.isEmpty() ? SessionStats.average(s.questTimes) : (s.kills > 0 ? s.activeMs / s.kills : 0);
+				rows.add("§7LVL " + (life.level + 1) + " §b" + TextUtil.formatCoins(life.xpToNextLevel) + " XP §8(" + bosses + " Bosse"
+						+ (avg > 0 ? ", ~" + TextUtil.formatDuration(bosses * avg) : "") + ")");
 			}
 		}
-		if (life != null && life.rngMeterXp >= 0) {
-			out.add("§7RNG Meter: §d" + TextUtil.formatInt(life.rngMeterXp) + " XP");
-		}
+		if (life != null && life.rngMeterXp >= 0) rows.add("§7RNG Meter §d" + TextUtil.formatInt(life.rngMeterXp) + " XP");
 
-		// --- Drops ---
-		if (cfg.showDrops && !s.drops.isEmpty()) {
-			out.add("§7Drops (Session):");
-			List<Map.Entry<String, Integer>> drops = new ArrayList<>(s.drops.entrySet());
-			drops.sort(Comparator.comparingDouble((Map.Entry<String, Integer> e) ->
-					prices.price(e.getKey(), cfg.instantSellPrices).value() * e.getValue()).reversed());
-			int shown = 0;
-			for (Map.Entry<String, Integer> e : drops) {
-				if (shown++ >= 6) {
-					out.add("§8  ... +" + (drops.size() - 6) + " weitere");
-					break;
-				}
-				PriceService.Price p = prices.price(e.getKey(), cfg.instantSellPrices);
-				String value = switch (p.source()) {
-					case BAZAAR -> " §6" + TextUtil.formatCoins(p.value() * e.getValue());
-					case AUCTION -> " §e" + TextUtil.formatCoins(p.value() * e.getValue()) + " §8(BIN)";
-					case UNKNOWN -> " §8(?)";
-				};
-				out.add("§8 • §f" + e.getValue() + "x " + e.getKey() + value);
-			}
+		// ---------- Zeichnen ----------
+		int w = WIDTH;
+		int h = 22 + (barPct >= 0 ? 16 : 0) + rows.size() * 10 + 4;
+		if (cfg.hudBackground) {
+			Ui.panel(g, 0, 0, w, h, 0xE0121218, Ui.argb(accent, 0x90));
+			Ui.hGradient(g, 1, 1, w - 1, 19, Ui.argb(accent, 0x60), 0x00121218);
 		}
-		return out;
-	}
+		Ui.icon(g, Ui.slayerIcon(type), 4, 2, 1.0f);
+		String title = type != null ? type.color + "§l" + type.bossName + " §7" + TextUtil.toRoman(t.tier()) : "§c§lKaiser's Slayers";
+		g.text(font, title, 23, 3, 0xFFFFFFFF, true);
+		String sub = life != null && life.level >= 0 ? "§8" + type.levelName + " Slayer LVL " + life.level : "§8Slayer Tracker";
+		Ui.text(g, font, sub, 23, 12, 0.75f, 0xFFFFFFFF, false);
 
-	public static double dropValue(SessionStats s, PriceService prices, ModConfig cfg) {
-		double sum = 0;
-		for (Map.Entry<String, Integer> e : s.drops.entrySet()) {
-			sum += prices.price(e.getKey(), cfg.instantSellPrices).value() * e.getValue();
+		int y = 22;
+		if (barPct >= 0) {
+			Ui.bar(g, 5, y, w - 10, 11, barPct, barFrom, barTo);
+			if (barLabel != null) Ui.centered(g, font, barLabel, w / 2f, y + 2, 0.75f, 0xFFFFFFFF, true);
+			y += 16;
 		}
-		return sum;
+		for (String r : rows) {
+			g.text(font, r, 6, y, 0xFFFFFFFF, true);
+			y += 10;
+		}
+		return h;
 	}
 }

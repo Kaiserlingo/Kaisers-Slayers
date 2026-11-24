@@ -1,5 +1,6 @@
 {
   "key.category.kaisers_slayers.main": "Kaiser's Slayers",
-  "key.kaisers_slayers.toggle_hud": "Toggle Slayer HUD",
-  "key.kaisers_slayers.post_stats": "Show session stats in chat"
+  "key.kaisers_slayers.menu": "Open menu",
+  "key.kaisers_slayers.toggle_hud": "Toggle HUDs",
+  "key.kaisers_slayers.skip_gambling": "Skip gambling animation"
 }

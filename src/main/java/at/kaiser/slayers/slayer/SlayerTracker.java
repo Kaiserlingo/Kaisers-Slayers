@@ -24,12 +24,21 @@ public class SlayerTracker {
 		void onBossKilled(SlayerType type, int tier, long killMs, boolean newBest);
 		void onQuestFailed(SlayerType type, int tier);
 		void onRareDrop(String rarity, String item, int count, boolean big);
+		/** Hypixel meldet "SLAYER MINI-BOSS ... HAS SPAWNED!" */
+		default void onMinibossMessage(String message) {}
+		/** Spider T5: "YOU COCOONED YOUR SLAYER BOSS" */
+		default void onCocoon() {}
+		default void onLevelUp(SlayerType type, int level) {}
+		default void onQuestStarted(SlayerType type, int tier) {}
 	}
 
 	// --- Chat-Muster (ohne Farbcodes, getrimmt) ---
 	static final Pattern QUEST_STARTED = Pattern.compile("^SLAYER QUEST STARTED!$");
 	static final Pattern BOSS_SLAIN = Pattern.compile("^NICE! SLAYER BOSS SLAIN!$");
-	static final Pattern QUEST_FAILED = Pattern.compile("^SLAYER QUEST FAILED!$");
+	static final Pattern QUEST_FAILED = Pattern.compile("^(SLAYER QUEST FAILED!|Your Slayer Quest has been cancelled!)$");
+	static final Pattern MINIBOSS = Pattern.compile("^SLAYER MINI-?BOSS.*");
+	static final Pattern COCOON = Pattern.compile("^YOU COCOONED YOUR SLAYER BOSS.*");
+	static final Pattern LEVEL_UP = Pattern.compile("^LVL UP! ➜ (Zombie|Spider|Wolf|Enderman|Blaze|Vampire) Slayer LVL (\\d+).*");
 	static final Pattern LEVEL_INFO = Pattern.compile(
 			"^(Zombie|Spider|Wolf|Enderman|Blaze|Vampire) Slayer LVL (\\d+) - (?:Next LVL in ([\\d,]+) XP!|LVL MAXED OUT!)$");
 	static final Pattern RNG_METER = Pattern.compile("^RNG Meter - ([\\d,]+) Stored XP$");
@@ -46,6 +55,9 @@ public class SlayerTracker {
 	private static final long DROP_WINDOW_MS = 15_000;
 
 	private final SessionStats session = new SessionStats();
+	private final ProfitTracker profit = new ProfitTracker();
+	private double costMultiplier = 1.0;
+	private static final long SACK_WINDOW_MS = 60_000;
 	private LifetimeStats lifetime = new LifetimeStats();
 	private Listener listener;
 
@@ -85,7 +97,10 @@ public class SlayerTracker {
 		if (lastTick != 0) {
 			long delta = Math.min(now - lastTick, 5_000);
 			boolean active = phase != Phase.NONE || (lastKillAt != 0 && now - lastKillAt < ACTIVE_GRACE_MS);
-			if (active && delta > 0) session.activeMs += delta;
+			if (active && delta > 0) {
+				session.activeMs += delta;
+				profit.addActiveTime(type(), delta);
+			}
 		}
 		lastTick = now;
 	}
@@ -96,8 +111,24 @@ public class SlayerTracker {
 	 * @param lines bereinigte Sidebar-Zeilen von oben nach unten, oder null wenn nicht in SkyBlock
 	 */
 	public void onScoreboard(List<String> lines, long now) {
-		int idx = lines == null ? -1 : indexOf(lines, "Slayer Quest");
-		if (idx < 0 || idx + 1 >= lines.size()) {
+		// Boss-Zeile irgendwo im Scoreboard suchen (z. B. "Revenant Horror IV", "Atoned Horror V")
+		int idx = -1;
+		SlayerType foundType = null;
+		int foundTier = 0;
+		if (lines != null) {
+			for (int i = 0; i < lines.size(); i++) {
+				Matcher m = BOSS_LINE.matcher(lines.get(i));
+				if (!m.matches()) continue;
+				SlayerType t = SlayerType.byBossName(m.group(1));
+				if (t != null) {
+					idx = i;
+					foundType = t;
+					foundTier = TextUtil.romanToInt(m.group(2));
+					break;
+				}
+			}
+		}
+		if (idx < 0) {
 			if (phase != Phase.NONE && phase != Phase.BOSS_SLAIN) {
 				// Quest verschwunden (Lobby-Wechsel, abgebrochen) – nur Anzeige zurücksetzen
 				phase = Phase.NONE;
@@ -107,19 +138,20 @@ public class SlayerTracker {
 			return;
 		}
 
-		Matcher boss = BOSS_LINE.matcher(lines.get(idx + 1));
-		if (boss.matches()) {
-			SlayerType t = SlayerType.byBossName(boss.group(1));
-			if (t != null) {
-				type = t;
-				tier = TextUtil.romanToInt(boss.group(2));
-				lastType = type;
-				lastTier = tier;
+		type = foundType;
+		tier = foundTier;
+		lastType = type;
+		lastTier = tier;
+
+		// Status-Zeile: die nächsten Zeilen nach dem Boss-Namen durchsuchen
+		String state = "";
+		for (int i = idx + 1; i < Math.min(lines.size(), idx + 4); i++) {
+			String l = lines.get(i);
+			if (l.startsWith("Slay the boss") || l.startsWith("Boss slain") || PROGRESS.matcher(l).find()) {
+				state = l;
+				break;
 			}
 		}
-		if (type == null) return;
-
-		String state = idx + 2 < lines.size() ? lines.get(idx + 2) : "";
 		boolean stale = now < ignoreBoardStateUntil;
 		if (stale && (state.startsWith("Slay the boss") || state.startsWith("Boss slain"))) {
 			return;
@@ -160,8 +192,27 @@ public class SlayerTracker {
 		String msg = TextUtil.stripFormatting(rawMessage).trim();
 		if (msg.isEmpty()) return;
 
+		if (MINIBOSS.matcher(msg).matches()) {
+			if (listener != null) listener.onMinibossMessage(msg);
+			return;
+		}
+		if (COCOON.matcher(msg).matches()) {
+			if (listener != null) listener.onCocoon();
+			return;
+		}
+		Matcher lu = LEVEL_UP.matcher(msg);
+		if (lu.matches()) {
+			SlayerType t = SlayerType.byLevelName(lu.group(1));
+			if (t != null) {
+				lifetime.get(t).level = Integer.parseInt(lu.group(2));
+				dirty = true;
+				if (listener != null) listener.onLevelUp(t, lifetime.get(t).level);
+			}
+			return;
+		}
 		if (QUEST_STARTED.matcher(msg).matches()) {
 			startQuest(now, true);
+			if (listener != null && type() != null) listener.onQuestStarted(type(), tier());
 			ignoreBoardStateUntil = now + 2_000;
 			return;
 		}
@@ -214,6 +265,7 @@ public class SlayerTracker {
 				item = c.group(2).trim();
 			}
 			session.addDrop(item, count);
+			profit.addItem(type != null ? type : lastType, item, count);
 			SlayerType t = type != null ? type : lastType;
 			if (t != null) lifetime.get(t).drops.merge(item, count, Integer::sum);
 			dirty = true;
@@ -278,7 +330,8 @@ public class SlayerTracker {
 		if (t == null) return;
 
 		session.kills++;
-		if (!t.motes) session.coinCost += t.cost(tr);
+		if (!t.motes) session.coinCost += Math.round(t.cost(tr) * costMultiplier);
+		profit.addKill(t, tr, costMultiplier);
 		session.xpGained += t.xpPerBoss(tr);
 
 		LifetimeStats.Entry e = lifetime.get(t);
@@ -302,13 +355,30 @@ public class SlayerTracker {
 		if (listener != null) listener.onBossKilled(t, tr, killMs, newBest);
 	}
 
+	/** Items aus einer Sack-Nachricht – zählen nur während eines Quests / kurz nach einem Kill. */
+	public void onSackItems(java.util.Map<String, Long> items, long now) {
+		boolean context = phase != Phase.NONE || (lastKillAt != 0 && now - lastKillAt < SACK_WINDOW_MS);
+		if (!context) return;
+		SlayerType t = type();
+		for (var e : items.entrySet()) profit.addItem(t, e.getKey(), e.getValue());
+	}
+
+	public void setCostMultiplier(double m) {
+		costMultiplier = m <= 0 ? 1.0 : m;
+	}
+
+	public ProfitTracker profit() {
+		return profit;
+	}
+
 	public void resetSession() {
+		profit.resetSession();
 		session.reset();
 	}
 
 	/** true, wenn sich Lifetime-Daten geändert haben (dann speichern). Setzt das Flag zurück. */
 	public boolean consumeDirty() {
-		boolean d = dirty;
+		boolean d = dirty | profit.consumeDirty();
 		dirty = false;
 		return d;
 	}

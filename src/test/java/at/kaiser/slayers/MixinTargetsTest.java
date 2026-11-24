@@ -23,5 +23,10 @@ class MixinTargetsTest {
 				"Minecraft#shouldEntityAppearGlowing fehlt – MinecraftMixin anpassen");
 		assertTrue(hasMethod("net.minecraft.world.entity.Entity", "getTeamColor"),
 				"Entity#getTeamColor fehlt – EntityMixin anpassen");
+		assertTrue(hasMethod("net.minecraft.client.renderer.entity.EntityRenderer", "extractRenderState"),
+				"EntityRenderer#extractRenderState fehlt – EntityRendererMixin anpassen");
+		Class<?> c = Class.forName("net.minecraft.client.renderer.blockentity.state.BlockEntityRenderState", false, getClass().getClassLoader());
+		assertTrue(Arrays.stream(c.getDeclaredFields()).anyMatch(f -> f.getName().equals("blockState")),
+				"BlockEntityRenderState#blockState fehlt – Accessor anpassen");
 	}
 }

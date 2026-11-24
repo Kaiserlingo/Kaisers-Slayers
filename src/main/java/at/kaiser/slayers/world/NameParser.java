@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
 public final class NameParser {
 	private static final Pattern HP = Pattern.compile("([\\d.,]+[kKmMbB]?)(?:/[\\d.,]+[kKmMbB]?)?\\s*❤");
 	private static final Pattern HITS = Pattern.compile("(\\d+)\\s*Hits?\\b");
-	private static final Pattern ATTUNEMENT = Pattern.compile("\\b(ASHEN|SPIRIT|CRYSTAL|AURIC)\\b");
+	private static final Pattern ATTUNEMENT = Pattern.compile("\\b(ASHEN|SPIRIT|CRYSTAL|AURIC|IMMUNE)\\b");
 	private static final Pattern TIMER = Pattern.compile("^(\\d{1,2}):(\\d{2})$");
 	private static final Pattern PILLAR = Pattern.compile("(\\d+)s\\s+(\\d+)\\s*hits?", Pattern.CASE_INSENSITIVE);
 	private static final Pattern SPAWNED_BY = Pattern.compile("^Spawned by:\\s*(\\S+)");
@@ -50,6 +50,20 @@ public final class NameParser {
 		return m.find() ? new int[]{Integer.parseInt(m.group(1)), Integer.parseInt(m.group(2))} : null;
 	}
 
+	/** Gehört dieses Namensschild zu einem Boss, den ich gespawnt habe? */
+	public static boolean isOwnerLabel(String name, String... myNames) {
+		if (!name.contains("Spawned by")) return false;
+		for (String n : myNames) {
+			if (n != null && !n.isEmpty() && name.toLowerCase(java.util.Locale.ROOT).contains(n.toLowerCase(java.util.Locale.ROOT))) return true;
+		}
+		return false;
+	}
+
+	/** Vampire: Boss kann gestaked werden */
+	public static boolean isSteakReady(String name) {
+		return name.contains("҉");
+	}
+
 	/** "Spawned by: Kaiser" -> "Kaiser", sonst null */
 	public static String spawnedBy(String name) {
 		Matcher m = SPAWNED_BY.matcher(name);
@@ -87,6 +101,7 @@ public final class NameParser {
 			case "AURIC" -> 0xFFFF55;
 			case "SPIRIT" -> 0xFFFFFF;
 			case "CRYSTAL" -> 0x55FFFF;
+			case "IMMUNE" -> 0xFF3333;
 			default -> -1;
 		};
 	}
@@ -98,6 +113,7 @@ public final class NameParser {
 			case "AURIC" -> "§e";
 			case "SPIRIT" -> "§f";
 			case "CRYSTAL" -> "§b";
+			case "IMMUNE" -> "§c";
 			default -> "§7";
 		};
 	}

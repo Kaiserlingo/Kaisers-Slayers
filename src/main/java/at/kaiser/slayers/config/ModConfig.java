@@ -2,6 +2,7 @@ package at.kaiser.slayers.config;
 
 import at.kaiser.slayers.KaisersSlayers;
 import at.kaiser.slayers.slayer.LifetimeStats;
+import at.kaiser.slayers.slayer.ProfitTracker;
 import at.kaiser.slayers.slayer.SlayerType;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -24,23 +25,47 @@ public class ModConfig {
 	private static final Path DIR = FabricLoader.getInstance().getConfigDir();
 	private static final Path CONFIG_FILE = DIR.resolve("kaisers_slayers.json");
 	private static final Path STATS_FILE = DIR.resolve("kaisers_slayers_stats.json");
+	private static final Path PROFIT_FILE = DIR.resolve("kaisers_slayers_profit.json");
 
-	// ================= Allgemein: Tracker =================
-	public boolean showProfit = true;
-	public boolean showDrops = true;
-	public boolean showLevelEta = true;
+	/** Position eines HUD-Elements: x/y als Anteil der Bildschirmgröße (0..1), damit es bei jeder Auflösung passt. */
+	public static class HudPos {
+		public float x, y, scale = 1.0f;
+		public boolean enabled = true;
+
+		public HudPos() {}
+
+		public HudPos(float x, float y) {
+			this.x = x;
+			this.y = y;
+		}
+	}
+
+	// ================= Tracker =================
 	public boolean killMessage = true;
+	public boolean questTimeMessage = true;
+	public boolean showLevelEta = true;
 	/** true = Instant-Sell-Preis, false = Sell-Offer-Preis */
 	public boolean instantSellPrices = true;
 
-	// ================= Allgemein: Alerts =================
+	// ================= Profit-Tracker =================
+	public boolean profitEnabled = true;
+	/** SESSION oder TOTAL */
+	public String profitMode = "SESSION";
+	public int profitMaxItems = 8;
+	/** Items unter diesem Gesamtwert werden zusammengefasst */
+	public long profitMinValue = 0;
+	public boolean profitCountSacks = true;
+	public boolean profitShowIcons = true;
+	/** Kosten-Faktor (z. B. 0.5 bei Aatrox "Slashed Pricing") */
+	public double costMultiplier = 1.0;
+	public List<String> hiddenItems = new ArrayList<>();
+
+	// ================= Alerts =================
 	public boolean spawnAlert = true;
 	public boolean soonSpawnAlert = true;
-	/** Ab wie viel % Quest-Fortschritt "Boss spawnt gleich" kommt. */
 	public int soonSpawnPercent = 90;
 	public boolean minibossAlert = true;
 	public boolean minibossWaypoint = true;
-	/** Wie lange der Waypoint-Pfeil zum Miniboss sichtbar bleibt (Sekunden). */
 	public int waypointSeconds = 15;
 	public boolean failAlert = true;
 	public boolean dropAlert = true;
@@ -48,40 +73,49 @@ public class ModConfig {
 	public int bossTimeLimitSec = 180;
 	public int bossTimeWarnSec = 30;
 	public boolean sounds = true;
+	public float alertScale = 3.0f;
+
+	// ================= Welt & Highlights =================
+	public boolean beamsEnabled = true;
+	public int minibossColor = 0x5555FF;
+	public int minibossBeamColor = 0x55FFFF;
+	public boolean otherBossGlow = false;
+	public int otherBossColor = 0x888888;
+	public int dropGlowSeconds = 20;
 
 	// ================= HUD =================
-	public boolean hudEnabled = true;
-	public int hudX = 6;
-	public int hudY = 40;
-	public float hudScale = 1.0f;
+	public HudPos slayerHud = new HudPos(0.005f, 0.08f);
+	public HudPos profitHud = new HudPos(0.005f, 0.42f);
 	public boolean hudBackground = true;
 	public boolean hudOnlyWhenActive = false;
 	public boolean waypointArrow = true;
-	/** Abstand des Boss-Panels unter dem Fadenkreuz */
 	public int bossPanelOffsetY = 24;
+	/** Akzentfarbe der Oberfläche (RGB) */
+	public int accentColor = 0xE74C3C;
 
 	// ================= Gambling =================
 	public boolean gamblingEnabled = true;
-	/** REEL = Kisten-Öffnung (horizontal), SLOTS = Slot-Machine mit 3 Walzen */
-	public String gamblingStyle = "REEL";
-	/** Dauer des Drehens in Millisekunden */
-	public int gamblingDurationMs = 4000;
-	/** ALWAYS = bei jedem Kill, RARE_ONLY = nur wenn ein RARE DROP oder besser kam */
+	/** CASE, SLOTS, WHEEL, CARDS oder RANDOM */
+	public String gamblingStyle = "CASE";
+	public int gamblingDurationMs = 5000;
+	/** ALWAYS oder RARE_ONLY */
 	public String gamblingTrigger = "ALWAYS";
 	public boolean gamblingSounds = true;
 	public boolean gamblingShowValue = true;
-	/** Ab diesem Wert (Coins) gibt es den Jackpot-Effekt */
 	public long gamblingJackpotValue = 5_000_000;
-	public float gamblingScale = 1.0f;
-	/** Eigene Drops (aus der Gesamtstatistik) mit in die Walze nehmen */
+	public boolean gamblingHideHud = true;
+	public boolean gamblingParticles = true;
+	public boolean gamblingShake = true;
+	public boolean gamblingFlash = true;
+	/** Abdunkelung des Hintergrunds in % */
+	public int gamblingDim = 85;
+	public int gamblingAccent = 0xFFD700;
 	public boolean gamblingUseOwnDrops = true;
-	/** Eigene Items je Slayer, Format "Itemname|Stufe" (Stufe 0-5), z. B. "Warden Heart|5" */
+	/** Eigene Items je Slayer, Format "Itemname|Stufe" (Stufe 0-5) */
 	public Map<String, List<String>> gamblingExtraItems = new LinkedHashMap<>();
 
 	// ================= Pro Slayer =================
-	/** slayer -> feature -> an/aus */
 	public Map<String, Map<String, Boolean>> slayerFeatures = new LinkedHashMap<>();
-	/** slayer -> Glow-Farbe (RGB) */
 	public Map<String, Integer> glowColors = new LinkedHashMap<>();
 
 	public boolean feature(SlayerType type, SlayerFeature f) {
@@ -127,15 +161,18 @@ public class ModConfig {
 		return c;
 	}
 
-	private void fixNulls() {
+	void fixNulls() {
 		if (slayerFeatures == null) slayerFeatures = new LinkedHashMap<>();
 		if (glowColors == null) glowColors = new LinkedHashMap<>();
 		if (gamblingExtraItems == null) gamblingExtraItems = new LinkedHashMap<>();
-		for (SlayerType t : SlayerType.values()) {
-			gamblingExtraItems.computeIfAbsent(t.key(), k -> new ArrayList<>());
-		}
-		if (gamblingStyle == null) gamblingStyle = "REEL";
+		for (SlayerType t : SlayerType.values()) gamblingExtraItems.computeIfAbsent(t.key(), k -> new ArrayList<>());
+		if (hiddenItems == null) hiddenItems = new ArrayList<>();
+		if (slayerHud == null) slayerHud = new HudPos(0.005f, 0.08f);
+		if (profitHud == null) profitHud = new HudPos(0.005f, 0.42f);
+		if (gamblingStyle == null) gamblingStyle = "CASE";
 		if (gamblingTrigger == null) gamblingTrigger = "ALWAYS";
+		if (profitMode == null) profitMode = "SESSION";
+		if (costMultiplier <= 0) costMultiplier = 1.0;
 	}
 
 	public void save() {
@@ -143,21 +180,38 @@ public class ModConfig {
 	}
 
 	public static LifetimeStats loadStats() {
-		try {
-			if (Files.exists(STATS_FILE)) {
-				try (Reader r = Files.newBufferedReader(STATS_FILE, StandardCharsets.UTF_8)) {
-					LifetimeStats s = GSON.fromJson(r, LifetimeStats.class);
-					if (s != null && s.slayers != null) return s;
-				}
-			}
-		} catch (Exception e) {
-			KaisersSlayers.LOGGER.warn("Konnte Statistik nicht laden", e);
-		}
-		return new LifetimeStats();
+		LifetimeStats s = read(STATS_FILE, LifetimeStats.class);
+		return s != null && s.slayers != null ? s : new LifetimeStats();
 	}
 
 	public static void saveStats(LifetimeStats stats) {
 		write(STATS_FILE, stats);
+	}
+
+	public static ProfitTracker.Saved loadProfit() {
+		ProfitTracker.Saved s = read(PROFIT_FILE, ProfitTracker.Saved.class);
+		return s != null ? s : new ProfitTracker.Saved();
+	}
+
+	public static void saveProfit(ProfitTracker.Saved s) {
+		write(PROFIT_FILE, s);
+	}
+
+	public static Path debugFile() {
+		return DIR.resolve("kaisers_slayers_debug.txt");
+	}
+
+	private static <T> T read(Path file, Class<T> cls) {
+		try {
+			if (Files.exists(file)) {
+				try (Reader r = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
+					return GSON.fromJson(r, cls);
+				}
+			}
+		} catch (Exception e) {
+			KaisersSlayers.LOGGER.warn("Konnte {} nicht laden", file.getFileName(), e);
+		}
+		return null;
 	}
 
 	private static void write(Path file, Object data) {

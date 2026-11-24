@@ -7,7 +7,7 @@ import java.util.List;
 public final class Waypoints {
 	public static final class Waypoint {
 		public final String key;
-		public final String label;
+		public String label;
 		public double x, y, z;
 		public final int color;
 		public long expiresAt;
@@ -38,6 +38,10 @@ public final class Waypoints {
 			}
 		}
 		LIST.add(new Waypoint(key, label, x, y, z, color, expiresAt));
+	}
+
+	public static synchronized void setLabel(String key, String label) {
+		for (Waypoint w : LIST) if (w.key.equals(key)) w.label = label;
 	}
 
 	public static synchronized void remove(String key) {

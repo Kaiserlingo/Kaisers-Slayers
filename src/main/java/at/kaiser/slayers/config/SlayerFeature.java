@@ -14,7 +14,11 @@ public enum SlayerFeature {
 	TRACKING(null, "Tracking", "Quest-Tracker, Statistik und Profit für diesen Slayer.", true),
 	BOSS_GLOW(null, "Boss-Highlight", "Dein eigener Boss leuchtet (Glow-Umriss in der Slayer-Farbe).", true),
 	BOSS_PANEL(null, "Boss-Info-Panel", "Infos zum Boss unter dem Fadenkreuz (HP, Timer, Spezial-Infos).", true),
-	MINIBOSS_HIGHLIGHT(null, "Miniboss-Highlight", "Minibosse dieses Slayers leuchten blau.", true),
+	BOSS_NAMETAG(null, "Timer direkt am Boss", "Zeigt Zeit, HP und Phase als Schild direkt über dem Boss in der Welt.", true),
+	BOSS_BAR(null, "Boss-HP-Leiste", "HP-Leiste deines Bosses oben am Bildschirm.", true),
+	MINIBOSS_HIGHLIGHT(null, "Miniboss-Highlight", "Minibosse dieses Slayers leuchten (Farbe unter Welt & Highlights).", true),
+	MINIBOSS_BEAM(null, "Miniboss-Strahl", "Lichtstrahl in den Himmel über jedem Miniboss (Farbe einstellbar).", true),
+	DROP_GLOW(null, "Drops am Boden", "Item-Drops nach dem Kill leuchten kurz, damit du sie findest.", true),
 	GAMBLING(null, "Gambling-Animation", "Gambling-Animation, wenn du diesen Boss tötest.", true),
 	LOW_HP_ALERT(null, "Low-HP-Alert", "Hinweis, wenn der Boss fast tot ist.", false),
 
@@ -27,6 +31,7 @@ public enum SlayerFeature {
 	SPIDER_JUMP_WARNING(SlayerType.SPIDER, "Sprung-Warnung", "Warnung, wenn der Broodfather zum Sprung ansetzt.", true),
 	SPIDER_BROOD_COUNTER(SlayerType.SPIDER, "Brood-Zähler", "Zählt die Spinnen-Minions rund um den Boss.", true),
 	SPIDER_BROOD_GLOW(SlayerType.SPIDER, "Brood-Highlight", "Spinnen-Minions rund um den Boss leuchten.", false),
+	SPIDER_COCOON_ALERT(SlayerType.SPIDER, "Cocoon-Alert", "Conjoined Brood (T5): Alert + Timer, wenn du den Boss eingesponnen hast.", true),
 
 	// ---------- Sven Packmaster ----------
 	WOLF_PUP_GLOW(SlayerType.WOLF, "Pup-Highlight", "Sven Pups leuchten, damit du sie schnell findest.", true),
@@ -35,7 +40,8 @@ public enum SlayerFeature {
 
 	// ---------- Voidgloom Seraph ----------
 	ENDERMAN_BEACON_OVERLAY(SlayerType.ENDERMAN, "Beacon-Overlay", "Yang Glyph: Beacon in der Hand / im Flug / platziert wird markiert, mit Pfeil + Countdown.", true),
-	ENDERMAN_BEACON_ALERT(SlayerType.ENDERMAN, "Beacon-Alert", "Großer Alert + Sound, wenn ein Beacon platziert wird.", true),
+	ENDERMAN_BEACON_BEAM(SlayerType.ENDERMAN, "Beacon-Strahl", "Roter Lichtstrahl über jedem platzierten Beacon.", true),
+	ENDERMAN_BEACON_ALERT(SlayerType.ENDERMAN, "Beacon-Alert", "Yang Glyph: großer Alert + Sound, wenn der Boss den Beacon wirft/platziert.", true),
 	ENDERMAN_SKULL_OVERLAY(SlayerType.ENDERMAN, "Skull-Overlay", "Nukekubi-Skulls rund um den Boss leuchten.", true),
 	ENDERMAN_SKULL_COUNTER(SlayerType.ENDERMAN, "Skull-Zähler", "Anzahl der aktiven Skulls im Boss-Panel.", true),
 	ENDERMAN_HITS_DISPLAY(SlayerType.ENDERMAN, "Hits-Anzeige", "Verbleibende Hits in der Hit-Phase groß anzeigen.", true),
@@ -48,12 +54,14 @@ public enum SlayerFeature {
 	BLAZE_PILLAR_TIMER(SlayerType.BLAZE, "Fire-Pillar-Timer", "Countdown + Hits des Fire Pillars im Boss-Panel.", true),
 	BLAZE_PILLAR_ALERT(SlayerType.BLAZE, "Fire-Pillar-Alert", "Warnung + Sound kurz bevor der Pillar explodiert.", true),
 	BLAZE_DEMON_GLOW(SlayerType.BLAZE, "Demon-Highlight", "Typhoeus und Quazii leuchten.", true),
+	BLAZE_IMMUNE_WARNING(SlayerType.BLAZE, "IMMUNE-Warnung", "Warnung, wenn der Boss gerade IMMUNE ist (kein Schaden möglich).", true),
 
 	// ---------- Riftstalker Bloodfiend ----------
-	VAMPIRE_STEAK_ALERT(SlayerType.VAMPIRE, "Steak-Stake-Alert", "Alert, sobald der Boss gestaked werden kann (≤ 20% HP).", true),
+	VAMPIRE_STEAK_ALERT(SlayerType.VAMPIRE, "Steak-Stake-Alert", "Alert, sobald der Boss gestaked werden kann (Symbol ҉ bzw. ≤ 20% HP).", true),
 	VAMPIRE_TWINCLAWS_ALERT(SlayerType.VAMPIRE, "Twinclaws-Alert", "Warnung, wenn Twinclaws kommt.", true),
+	VAMPIRE_MANIA_ALERT(SlayerType.VAMPIRE, "Mania-Alert", "Warnung bei MANIA – zeigt, ob du auf grünem Boden stehst.", true),
 	VAMPIRE_ICHOR_GLOW(SlayerType.VAMPIRE, "Ichor/Spring-Highlight", "Blood Ichor und Killer Springs rund um den Boss leuchten (experimentell).", true),
-	VAMPIRE_TWINCLAWS_TIMER(SlayerType.VAMPIRE, "Twinclaws-Timer", "Countdown bis zum nächsten Twinclaws (ab T2 ca. alle 7 Sekunden).", true);
+	VAMPIRE_TWINCLAWS_TIMER(SlayerType.VAMPIRE, "Holy-Ice-Timer", "Countdown bis zum nächsten Twinclaws (ab T2 alle 7 Sekunden) – rechtzeitig Holy Ice.", true);
 
 	/** null = gilt für jeden Slayer */
 	public final SlayerType type;
