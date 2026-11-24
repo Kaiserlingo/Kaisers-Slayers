@@ -139,7 +139,7 @@ public final class Menus {
 	static List<Option> hud() {
 		List<Option> o = new ArrayList<>();
 		o.add(Option.action("HUD-Editor", "HUDs mit der Maus verschieben (ziehen) und skalieren (Mausrad).", "Öffnen",
-				() -> Minecraft.getInstance().gui.setScreen(new HudEditorScreen(Minecraft.getInstance().gui.screen())));
+				() -> Minecraft.getInstance().gui.setScreen(new HudEditorScreen(Minecraft.getInstance().gui.screen()))));
 		o.add(Option.toggle("Slayer-HUD", "Quest, Fortschritt, Zeiten, Level.", () -> c().slayerHud.enabled, v -> c().slayerHud.enabled = v));
 		o.add(Option.toggle("Profit-HUD", "Der Profit-Tracker als eigene Karte.", () -> c().profitHud.enabled, v -> c().profitHud.enabled = v));
 		o.add(Option.toggle("Hintergrund", "Karten-Hintergrund der HUDs.", () -> c().hudBackground, v -> c().hudBackground = v));
