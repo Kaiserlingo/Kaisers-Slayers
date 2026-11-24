@@ -74,6 +74,13 @@ public final class GamblingAnimation {
 		int color;
 	}
 
+	/** Uhr – austauschbar für automatische Tests */
+	public static java.util.function.LongSupplier clock = System::currentTimeMillis;
+
+	private static long now() {
+		return clock.getAsLong();
+	}
+
 	private GamblingAnimation() {}
 
 	// ================================================================ Steuerung
@@ -104,20 +111,20 @@ public final class GamblingAnimation {
 		List<LootPool.Entry> pool = pool(t);
 		LootPool.Entry pick = pool.get(RANDOM.nextInt(pool.size()));
 		List<SlayerTracker.Drop> drops = new ArrayList<>();
-		if (pick.tier() > 0) drops.add(new SlayerTracker.Drop(pick.name(), 1, pick.tier(), System.currentTimeMillis()));
+		if (pick.tier() > 0) drops.add(new SlayerTracker.Drop(pick.name(), 1, pick.tier(), now()));
 		if (forcedStyle != null) KaisersSlayers.config().gamblingStyle = forcedStyle;
 		PARTICLES.clear();
 		stage = Stage.SUSPENSE;
-		stageStart = System.currentTimeMillis() - SUSPENSE_MS + 700;
-		startSpin(drops, System.currentTimeMillis());
-		stageStart = System.currentTimeMillis();
+		stageStart = now() - SUSPENSE_MS + 700;
+		startSpin(drops, now());
+		stageStart = now();
 	}
 
 	/** Überspringen (Taste): direkt zum Ergebnis bzw. beenden */
 	public static void skip() {
 		if (stage == Stage.SPIN) {
 			stage = Stage.REVEAL;
-			stageStart = System.currentTimeMillis();
+			stageStart = now();
 			onReveal();
 		} else if (stage == Stage.REVEAL || stage == Stage.SUSPENSE) {
 			stage = Stage.IDLE;
@@ -293,7 +300,7 @@ public final class GamblingAnimation {
 		if (stage == Stage.IDLE) return;
 		Minecraft mc = Minecraft.getInstance();
 		ModConfig cfg = KaisersSlayers.config();
-		long now = System.currentTimeMillis();
+		long now = now();
 		float dt = lastFrame == 0 ? 0.016f : Math.min(0.1f, (now - lastFrame) / 1000f);
 		lastFrame = now;
 		long t = now - stageStart;
@@ -460,7 +467,7 @@ public final class GamblingAnimation {
 		int gold = 0xFF000000 | KaisersSlayers.config().gamblingAccent;
 
 		Ui.panel(g, left - 14, top - 18, left + totalW + 14, top + cellH * 3 + 18, 0xF0140C08, gold);
-		long now = System.currentTimeMillis();
+		long now = now();
 		// blinkende Lichter am Rahmen
 		for (int i = 0; i < 18; i++) {
 			int lx = left - 10 + i * (totalW + 20) / 17;
@@ -552,7 +559,7 @@ public final class GamblingAnimation {
 			Ui.icon(g, ItemIcons.of(wheel.get(i).name()), ix - 8, iy - 8, 1.0f);
 		}
 		// Rand mit Lichtern
-		long now = System.currentTimeMillis();
+		long now = now();
 		int gold = 0xFF000000 | KaisersSlayers.config().gamblingAccent;
 		for (int i = 0; i < 36; i++) {
 			double a = Math.toRadians(i * 10);
@@ -595,7 +602,7 @@ public final class GamblingAnimation {
 			boolean front = fp >= 0.5;
 			float sx = Math.abs(flip);
 			float cx = left + i * (cardW + gap) + cardW / 2f;
-			float hover = (float) Math.sin(System.currentTimeMillis() / 300.0 + i) * 2f;
+			float hover = (float) Math.sin(now() / 300.0 + i) * 2f;
 			g.pose().pushMatrix();
 			g.pose().translate(cx, cy + hover);
 			g.pose().scale(Math.max(0.02f, sx), 1f);

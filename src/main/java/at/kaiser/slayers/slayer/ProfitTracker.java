@@ -114,6 +114,11 @@ public class ProfitTracker {
 		session.clear();
 	}
 
+	/** Beispieldaten (nur Session) für die HUD-Vorschau */
+	public void onDemo(SlayerType t, Map<String, Long> items) {
+		for (Map.Entry<String, Long> e : items.entrySet()) session(t).add(e.getKey(), e.getValue());
+	}
+
 	public void resetTotal(SlayerType t) {
 		saved.slayers.remove(t.key());
 		dirty = true;

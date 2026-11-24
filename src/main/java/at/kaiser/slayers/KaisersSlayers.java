@@ -63,6 +63,7 @@ public class KaisersSlayers implements ClientModInitializer {
 	private static int soonAlertedQuest = -1;
 	private static boolean onSkyBlock;
 	private static boolean forceHud;
+	private static boolean demo;
 	private static int tickCounter;
 	private static boolean bossWarned;
 	private static long lastMinibossAlert;
@@ -178,6 +179,11 @@ public class KaisersSlayers implements ClientModInitializer {
 		if (mc.player == null || mc.level == null) {
 			if (onSkyBlock) SCANNER.reset();
 			onSkyBlock = false;
+			return;
+		}
+
+		if (demo) {
+			if (++tickCounter % 5 == 0) TRACKER.tick(now);
 			return;
 		}
 
@@ -303,9 +309,20 @@ public class KaisersSlayers implements ClientModInitializer {
 	public static boolean onSkyBlock() { return onSkyBlock; }
 	public static boolean forceHud() { return forceHud; }
 
+	/** "/ks test": HUDs mit Beispieldaten auch außerhalb von SkyBlock zeigen */
 	public static boolean toggleForceHud() {
 		forceHud = !forceHud;
+		demo = forceHud;
+		if (demo) DemoData.load();
+		else {
+			TRACKER.resetSession();
+			SCANNER.reset();
+		}
 		return forceHud;
+	}
+
+	public static boolean isDemo() {
+		return demo;
 	}
 
 	/** Reagiert auf Ereignisse des Trackers mit Einblendungen, Sounds und Chat-Nachrichten. */

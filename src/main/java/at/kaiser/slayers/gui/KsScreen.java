@@ -193,6 +193,11 @@ public class KsScreen extends Screen {
 		return cached;
 	}
 
+	/** Für automatische Tests */
+	public void selectCategory(int idx) {
+		select(idx);
+	}
+
 	private void select(int idx) {
 		category = idx;
 		lastCategory = idx;

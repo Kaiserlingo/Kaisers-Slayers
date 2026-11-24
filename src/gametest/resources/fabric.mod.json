@@ -1,0 +1,12 @@
+{
+	"schemaVersion": 1,
+	"id": "kaisers_slayers_test",
+	"version": "1.0.0",
+	"name": "Kaiser's Slayers Tests",
+	"environment": "*",
+	"entrypoints": {
+		"fabric-client-gametest": [
+			"at.kaiser.slayers.test.KsClientGameTest"
+		]
+	}
+}

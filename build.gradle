@@ -29,6 +29,17 @@ test {
 	useJUnitPlatform()
 }
 
+// Automatische Client-Tests: startet das echte Spiel und macht Screenshots (./gradlew runClientGameTest)
+fabricApi {
+	configureTests {
+		createSourceSet = true
+		modId = "kaisers_slayers_test"
+		enableGameTests = false
+		enableClientGameTests = true
+		eula = true
+	}
+}
+
 processResources {
 	def version = project.version
 	inputs.property "version", version
