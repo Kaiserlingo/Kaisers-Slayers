@@ -11,57 +11,58 @@ import java.util.List;
  */
 public enum SlayerFeature {
 	// ---------- Für jeden Slayer ----------
-	TRACKING(null, "Tracking", "Quest-Tracker, Statistik und Profit für diesen Slayer.", true),
-	BOSS_GLOW(null, "Boss-Highlight", "Dein eigener Boss leuchtet (Glow-Umriss in der Slayer-Farbe).", true),
-	BOSS_PANEL(null, "Boss-Info-Panel", "Infos zum Boss unter dem Fadenkreuz (HP, Timer, Spezial-Infos).", true),
-	BOSS_NAMETAG(null, "Timer direkt am Boss", "Zeigt Zeit, HP und Phase als Schild direkt über dem Boss in der Welt.", true),
-	BOSS_BAR(null, "Boss-HP-Leiste", "HP-Leiste deines Bosses oben am Bildschirm.", true),
-	MINIBOSS_HIGHLIGHT(null, "Miniboss-Highlight", "Minibosse dieses Slayers leuchten (Farbe unter Welt & Highlights).", true),
-	MINIBOSS_BEAM(null, "Miniboss-Strahl", "Lichtstrahl in den Himmel über jedem Miniboss (Farbe einstellbar).", true),
-	DROP_GLOW(null, "Drops am Boden", "Item-Drops nach dem Kill leuchten kurz, damit du sie findest.", true),
-	GAMBLING(null, "Gambling-Animation", "Gambling-Animation, wenn du diesen Boss tötest.", true),
-	LOW_HP_ALERT(null, "Low-HP-Alert", "Hinweis, wenn der Boss fast tot ist.", false),
+	TRACKING(null, "Tracking", "Quest tracker, stats and profit for this slayer.", true),
+	BOSS_GLOW(null, "Boss Highlight", "Your own boss glows (outline in the color set below).", true),
+	BOSS_PANEL(null, "Boss Info Panel", "Boss info under your crosshair (HP, timer, phase info).", true),
+	BOSS_NAMETAG(null, "Boss Timer Nametag", "Shows time left, HP and phase as a nametag right above your boss.", true),
+	BOSS_BAR(null, "Boss HP Bar", "HP bar of your boss at the top of the screen.", true),
+	MINIBOSS_HIGHLIGHT(null, "Miniboss Highlight", "Minibosses of this slayer glow (color under World & Highlights).", true),
+	MINIBOSS_BEAM(null, "Miniboss Beam", "Beacon beam into the sky above every miniboss (custom color).", true),
+	MINIBOSS_TRACER(null, "Miniboss Tracer", "Line from you to every miniboss so you find it instantly (custom color).", true),
+	DROP_GLOW(null, "Highlight Ground Drops", "Highlights boss drops on the ground after the kill. Off by default to avoid spoilers.", false),
+	GAMBLING(null, "Gambling Animation", "Plays the gambling animation when you slay this boss.", true),
+	LOW_HP_ALERT(null, "Low HP Alert", "Alert when the boss is almost dead.", false),
 
 	// ---------- Revenant Horror ----------
-	ZOMBIE_TNT_WARNING(SlayerType.ZOMBIE, "TNT-Warnung", "Atoned Horror (T5): Warnung + Zähler, wenn TNT in deiner Nähe liegt.", true),
-	ZOMBIE_TNT_GLOW(SlayerType.ZOMBIE, "TNT-Highlight", "TNT rund um den Boss leuchtet rot.", true),
-	ZOMBIE_HEAL_TRACKER(SlayerType.ZOMBIE, "Heal-Erkennung", "Meldet, wenn sich der Boss wieder hochheilt (HP steigt).", true),
+	ZOMBIE_TNT_WARNING(SlayerType.ZOMBIE, "TNT Warning", "Atoned Horror (T5): warning + counter when TNT is near you.", true),
+	ZOMBIE_TNT_GLOW(SlayerType.ZOMBIE, "TNT Highlight", "TNT around the boss glows red.", true),
+	ZOMBIE_HEAL_TRACKER(SlayerType.ZOMBIE, "Heal Detection", "Tells you when the boss heals back up (HP rises).", true),
 
 	// ---------- Tarantula Broodfather ----------
-	SPIDER_JUMP_WARNING(SlayerType.SPIDER, "Sprung-Warnung", "Warnung, wenn der Broodfather zum Sprung ansetzt.", true),
-	SPIDER_BROOD_COUNTER(SlayerType.SPIDER, "Brood-Zähler", "Zählt die Spinnen-Minions rund um den Boss.", true),
-	SPIDER_BROOD_GLOW(SlayerType.SPIDER, "Brood-Highlight", "Spinnen-Minions rund um den Boss leuchten.", false),
-	SPIDER_COCOON_ALERT(SlayerType.SPIDER, "Cocoon-Alert", "Conjoined Brood (T5): Alert + Timer, wenn du den Boss eingesponnen hast.", true),
+	SPIDER_JUMP_WARNING(SlayerType.SPIDER, "Jump Warning", "Warning when the Broodfather leaps.", true),
+	SPIDER_BROOD_COUNTER(SlayerType.SPIDER, "Brood Counter", "Counts the spider minions around the boss.", true),
+	SPIDER_BROOD_GLOW(SlayerType.SPIDER, "Brood Highlight", "Spider minions around the boss glow.", false),
+	SPIDER_COCOON_ALERT(SlayerType.SPIDER, "Cocoon Alert", "Conjoined Brood (T5): alert + timer when you cocooned your boss.", true),
 
 	// ---------- Sven Packmaster ----------
-	WOLF_PUP_GLOW(SlayerType.WOLF, "Pup-Highlight", "Sven Pups leuchten, damit du sie schnell findest.", true),
-	WOLF_PUP_COUNTER(SlayerType.WOLF, "Pup-Zähler", "Zeigt, wie viele Pups noch leben (Boss ist solange unverwundbar).", true),
-	WOLF_PUP_ALERT(SlayerType.WOLF, "Pup-Alert", "Alert, sobald die Pups gerufen werden.", true),
+	WOLF_PUP_GLOW(SlayerType.WOLF, "Pup Highlight", "Sven Pups glow so you find them quickly.", true),
+	WOLF_PUP_COUNTER(SlayerType.WOLF, "Pup Counter", "Shows how many pups are alive (boss is invulnerable meanwhile).", true),
+	WOLF_PUP_ALERT(SlayerType.WOLF, "Pup Alert", "Alert as soon as the pups are called.", true),
 
 	// ---------- Voidgloom Seraph ----------
-	ENDERMAN_BEACON_OVERLAY(SlayerType.ENDERMAN, "Beacon-Overlay", "Yang Glyph: Beacon in der Hand / im Flug / platziert wird markiert, mit Pfeil + Countdown.", true),
-	ENDERMAN_BEACON_BEAM(SlayerType.ENDERMAN, "Beacon-Strahl", "Roter Lichtstrahl über jedem platzierten Beacon.", true),
-	ENDERMAN_BEACON_ALERT(SlayerType.ENDERMAN, "Beacon-Alert", "Yang Glyph: großer Alert + Sound, wenn der Boss den Beacon wirft/platziert.", true),
-	ENDERMAN_SKULL_OVERLAY(SlayerType.ENDERMAN, "Skull-Overlay", "Nukekubi-Skulls rund um den Boss leuchten.", true),
-	ENDERMAN_SKULL_COUNTER(SlayerType.ENDERMAN, "Skull-Zähler", "Anzahl der aktiven Skulls im Boss-Panel.", true),
-	ENDERMAN_HITS_DISPLAY(SlayerType.ENDERMAN, "Hits-Anzeige", "Verbleibende Hits in der Hit-Phase groß anzeigen.", true),
-	ENDERMAN_LASER_TIMER(SlayerType.ENDERMAN, "Laser-Timer", "Zeigt, wie lange die Laser-Phase schon läuft.", true),
-	ENDERMAN_PHASE_COLOR(SlayerType.ENDERMAN, "Phasen-Farbe", "Boss-Highlight-Farbe je nach Phase (Hits / Laser / Damage).", true),
+	ENDERMAN_BEACON_OVERLAY(SlayerType.ENDERMAN, "Beacon Overlay", "Yang Glyph: held / thrown / placed beacon gets highlighted, with arrow + countdown.", true),
+	ENDERMAN_BEACON_BEAM(SlayerType.ENDERMAN, "Beacon Beam", "Red beam above every placed Yang Glyph beacon.", true),
+	ENDERMAN_BEACON_ALERT(SlayerType.ENDERMAN, "Beacon Alert", "Yang Glyph: big alert + sound when the boss throws/places the beacon.", true),
+	ENDERMAN_SKULL_OVERLAY(SlayerType.ENDERMAN, "Nukekubi Skull Overlay", "Nukekubi Fixations (skulls) around the boss glow.", true),
+	ENDERMAN_SKULL_COUNTER(SlayerType.ENDERMAN, "Skull Counter", "Number of active Nukekubi skulls in the boss panel.", true),
+	ENDERMAN_HITS_DISPLAY(SlayerType.ENDERMAN, "Hits Shield Display", "Shows the remaining hits of the hits phase in big.", true),
+	ENDERMAN_LASER_TIMER(SlayerType.ENDERMAN, "Laser Timer", "Shows how long the laser phase is still running.", true),
+	ENDERMAN_PHASE_COLOR(SlayerType.ENDERMAN, "Phase Color", "Boss glow changes color per phase (hits / laser / damage). Overrides your Boss Highlight color!", false),
 
 	// ---------- Inferno Demonlord ----------
-	BLAZE_DAGGER_DISPLAY(SlayerType.BLAZE, "Dagger-Anzeige", "Zeigt die benötigte Attunement + den richtigen Dagger; rot, wenn du den falschen hältst.", true),
-	BLAZE_ATTUNEMENT_GLOW(SlayerType.BLAZE, "Attunement-Farbe", "Boss-Highlight in der Farbe der aktuellen Attunement.", true),
-	BLAZE_PILLAR_TIMER(SlayerType.BLAZE, "Fire-Pillar-Timer", "Countdown + Hits des Fire Pillars im Boss-Panel.", true),
-	BLAZE_PILLAR_ALERT(SlayerType.BLAZE, "Fire-Pillar-Alert", "Warnung + Sound kurz bevor der Pillar explodiert.", true),
-	BLAZE_DEMON_GLOW(SlayerType.BLAZE, "Demon-Highlight", "Typhoeus und Quazii leuchten.", true),
-	BLAZE_IMMUNE_WARNING(SlayerType.BLAZE, "IMMUNE-Warnung", "Warnung, wenn der Boss gerade IMMUNE ist (kein Schaden möglich).", true),
+	BLAZE_DAGGER_DISPLAY(SlayerType.BLAZE, "Dagger Display", "Shows the required attunement + the right dagger; red if you hold the wrong one.", true),
+	BLAZE_ATTUNEMENT_GLOW(SlayerType.BLAZE, "Attunement Color", "Boss glows in the color of the current attunement. Overrides your Boss Highlight color!", true),
+	BLAZE_PILLAR_TIMER(SlayerType.BLAZE, "Fire Pillar Timer", "Fire Pillar countdown + hits in the boss panel.", true),
+	BLAZE_PILLAR_ALERT(SlayerType.BLAZE, "Fire Pillar Alert", "Warning + sound right before the pillar explodes.", true),
+	BLAZE_DEMON_GLOW(SlayerType.BLAZE, "Demon Highlight", "Typhoeus and Quazii glow.", true),
+	BLAZE_IMMUNE_WARNING(SlayerType.BLAZE, "IMMUNE Warning", "Warning while the boss is IMMUNE (no damage possible).", true),
 
 	// ---------- Riftstalker Bloodfiend ----------
-	VAMPIRE_STEAK_ALERT(SlayerType.VAMPIRE, "Steak-Stake-Alert", "Alert, sobald der Boss gestaked werden kann (Symbol ҉ bzw. ≤ 20% HP).", true),
-	VAMPIRE_TWINCLAWS_ALERT(SlayerType.VAMPIRE, "Twinclaws-Alert", "Warnung, wenn Twinclaws kommt.", true),
-	VAMPIRE_MANIA_ALERT(SlayerType.VAMPIRE, "Mania-Alert", "Warnung bei MANIA – zeigt, ob du auf grünem Boden stehst.", true),
-	VAMPIRE_ICHOR_GLOW(SlayerType.VAMPIRE, "Ichor/Spring-Highlight", "Blood Ichor und Killer Springs rund um den Boss leuchten (experimentell).", true),
-	VAMPIRE_TWINCLAWS_TIMER(SlayerType.VAMPIRE, "Holy-Ice-Timer", "Countdown bis zum nächsten Twinclaws (ab T2 alle 7 Sekunden) – rechtzeitig Holy Ice.", true);
+	VAMPIRE_STEAK_ALERT(SlayerType.VAMPIRE, "Steak Stake Alert", "Alert as soon as the boss can be staked (҉ symbol or ≤ 20% HP).", true),
+	VAMPIRE_TWINCLAWS_ALERT(SlayerType.VAMPIRE, "Twinclaws Alert", "Warning when Twinclaws is coming.", true),
+	VAMPIRE_MANIA_ALERT(SlayerType.VAMPIRE, "Mania Alert", "Warning on MANIA – shows whether you stand on green terracotta.", true),
+	VAMPIRE_ICHOR_GLOW(SlayerType.VAMPIRE, "Ichor/Spring Highlight", "Blood Ichors and Killer Springs around the boss glow (experimental).", true),
+	VAMPIRE_TWINCLAWS_TIMER(SlayerType.VAMPIRE, "Holy Ice Timer", "Countdown to the next Twinclaws (T2+ every 7 seconds) – Holy Ice in time.", true);
 
 	/** null = gilt für jeden Slayer */
 	public final SlayerType type;

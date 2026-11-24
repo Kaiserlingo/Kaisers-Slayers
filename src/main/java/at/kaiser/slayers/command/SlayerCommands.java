@@ -36,17 +36,17 @@ public final class SlayerCommands {
 				.then(ClientCommands.literal("lifetime").executes(SlayerCommands::lifetime))
 				.then(ClientCommands.literal("reset").executes(ctx -> {
 					KaisersSlayers.tracker().resetSession();
-					return ok(ctx, "§aSession zurückgesetzt.");
+					return ok(ctx, "§aSession reset.");
 				}))
 				.then(ClientCommands.literal("profit").executes(ctx -> {
 					var cfg = KaisersSlayers.config();
 					cfg.profitMode = "TOTAL".equals(cfg.profitMode) ? "SESSION" : "TOTAL";
 					cfg.save();
-					return ok(ctx, "§7Profit-Anzeige: §f" + ("TOTAL".equals(cfg.profitMode) ? "Gesamt" : "Session"));
+					return ok(ctx, "§7Profit tracker: §f" + ("TOTAL".equals(cfg.profitMode) ? "Total" : "Session"));
 				}))
 				.then(ClientCommands.literal("prices").executes(ctx -> {
 					KaisersSlayers.prices().refresh();
-					return ok(ctx, "§aBazaar-Preise werden neu geladen...");
+					return ok(ctx, "§aRefreshing Bazaar prices...");
 				}))
 				.then(ClientCommands.literal("debug").executes(ctx -> {
 					KaisersSlayers.writeDebugDump();
@@ -54,7 +54,7 @@ public final class SlayerCommands {
 				}))
 				.then(ClientCommands.literal("test").executes(ctx -> {
 					boolean on = KaisersSlayers.toggleForceHud();
-					return ok(ctx, on ? "§aTestmodus an: HUDs werden überall angezeigt." : "§7Testmodus aus.");
+					return ok(ctx, on ? "§aTest mode on: HUDs are shown everywhere." : "§7Test mode off.");
 				}));
 		LiteralArgumentBuilder<FabricClientCommandSource> gamble = ClientCommands.literal("gamble");
 		for (String style : new String[]{"case", "slots", "wheel", "cards"}) {
@@ -71,23 +71,23 @@ public final class SlayerCommands {
 
 	private static int help(CommandContext<FabricClientCommandSource> ctx) {
 		String[] lines = {
-				"§c§lKaiser's Slayers §7– Befehle",
-				"§e/ks §7– Menü öffnen (alle Einstellungen)",
-				"§e/ks hud §7– HUD-Editor (verschieben/skalieren)",
-				"§e/ks profit §7– Profit: Session ↔ Gesamt",
-				"§e/ks lifetime §7– Gesamtstatistik aller Slayer",
-				"§e/ks reset §7– Session zurücksetzen",
-				"§e/ks gamble <case|slots|wheel|cards> §7– Animation testen",
-				"§e/ks prices §7– Bazaar-Preise neu laden",
-				"§e/ks debug §7– Debug-Datei für Fehlerberichte",
-				"§e/ks test §7– HUDs außerhalb von SkyBlock zeigen",
+				"§c§lKaiser's Slayers §7– Commands",
+				"§e/ks §7– open the menu (all settings)",
+				"§e/ks hud §7– HUD editor (move/scale)",
+				"§e/ks profit §7– profit: Session ↔ Total",
+				"§e/ks lifetime §7– lifetime stats of all slayers",
+				"§e/ks reset §7– reset the session",
+				"§e/ks gamble <case|slots|wheel|cards> §7– test the animation",
+				"§e/ks prices §7– refresh Bazaar prices",
+				"§e/ks debug §7– debug file for bug reports",
+				"§e/ks test §7– show HUDs outside of SkyBlock",
 		};
 		for (String l : lines) ctx.getSource().sendFeedback(Component.literal(l));
 		return 1;
 	}
 
 	private static int lifetime(CommandContext<FabricClientCommandSource> ctx) {
-		ctx.getSource().sendFeedback(Component.literal("§c§lKaiser's Slayers §7– Gesamtstatistik"));
+		ctx.getSource().sendFeedback(Component.literal("§c§lKaiser's Slayers §7– Lifetime Stats"));
 		LifetimeStats stats = KaisersSlayers.tracker().lifetime();
 		boolean any = false;
 		for (SlayerType type : SlayerType.values()) {
@@ -97,14 +97,14 @@ public final class SlayerCommands {
 			StringBuilder sb = new StringBuilder();
 			sb.append(type.color).append(type.levelName).append(" Slayer");
 			if (e.level >= 0) sb.append(" §7LVL ").append(e.level);
-			sb.append(" §8| §f").append(e.kills).append(" Bosse");
+			sb.append(" §8| §f").append(e.kills).append(" bosses");
 			if (e.timedKills > 0) {
 				sb.append(" §8| §7Ø ").append(TextUtil.formatSeconds(e.averageKillMs())).append(" §7Best ").append(TextUtil.formatSeconds(e.bestKillMs));
 			}
 			if (e.fails > 0) sb.append(" §8| §c").append(e.fails).append(" failed");
 			ctx.getSource().sendFeedback(Component.literal(sb.toString()));
 		}
-		if (!any) ctx.getSource().sendFeedback(Component.literal("§7Noch keine Slayer-Daten – geh Bosse killen!"));
+		if (!any) ctx.getSource().sendFeedback(Component.literal("§7No slayer data yet – go slay some bosses!"));
 		return 1;
 	}
 

@@ -72,6 +72,18 @@ public final class ProfitHud {
 		return rows;
 	}
 
+	/** Höhe der Karte in Pixeln (ohne Skalierung) */
+	public static int height(SlayerType type, ProfitTracker.Bucket b, ModConfig cfg) {
+		int shown = 0;
+		long rest = 0;
+		for (Row r : rows(type, b)) {
+			if (cfg.hiddenItems.contains(r.name())) continue;
+			if (shown < cfg.profitMaxItems && r.value() >= cfg.profitMinValue) shown++;
+			else rest += r.count();
+		}
+		return 22 + Math.max(1, shown + (rest > 0 ? 1 : 0)) * 10 + 6 + 10 + 4 + 20 + 12;
+	}
+
 	public static int draw(GuiGraphicsExtractor g, Font font, SlayerType type, ProfitTracker.Bucket b, ModConfig cfg) {
 		List<Row> rows = rows(type, b);
 		double itemValue = 0;
@@ -102,16 +114,16 @@ public final class ProfitHud {
 			Ui.hGradient(g, 1, 1, w - 1, 19, 0x60FFC234, 0x00121218);
 		}
 		g.text(font, "§6§l⛃ PROFIT", 6, 3, 0xFFFFFFFF, true);
-		String mode = "TOTAL".equals(cfg.profitMode) ? "GESAMT" : "SESSION";
+		String mode = "TOTAL".equals(cfg.profitMode) ? "TOTAL" : "SESSION";
 		int mw = (int) (font.width(mode) * 0.75f) + 6;
 		Ui.round(g, w - mw - 5, 3, w - 5, 12, 0x60FFC234);
 		Ui.text(g, font, mode, w - mw - 2, 4.5f, 0.75f, 0xFFFFE9A8, false);
-		Ui.text(g, font, type.color + type.bossName + " §8· §7" + b.kills + " Bosse" + (b.minibosses > 0 ? " · " + b.minibosses + " Minis" : ""),
+		Ui.text(g, font, type.color + type.bossName + " §8· §7" + b.kills + " bosses" + (b.minibosses > 0 ? " · " + b.minibosses + " Minis" : ""),
 				6, 12, 0.75f, 0xFFFFFFFF, false);
 
 		int y = 22;
 		if (shown.isEmpty() && restCount == 0) {
-			g.text(font, "§8Noch keine Drops", 6, y, 0xFFFFFFFF, true);
+			g.text(font, "§8No drops yet", 6, y, 0xFFFFFFFF, true);
 			y += 10;
 		}
 		for (Row r : shown) {
@@ -129,7 +141,7 @@ public final class ProfitHud {
 			y += 10;
 		}
 		if (restCount > 0) {
-			g.text(font, "§8+ " + TextUtil.formatInt(restCount) + " weitere", 12, y, 0xFFFFFFFF, true);
+			g.text(font, "§8+ " + TextUtil.formatInt(restCount) + " more", 12, y, 0xFFFFFFFF, true);
 			Ui.rightText(g, font, "§6" + TextUtil.formatCoins(restValue), w - 6, y, 0xFFFFFFFF);
 			y += 10;
 		}
@@ -137,13 +149,13 @@ public final class ProfitHud {
 		y += 3;
 		g.fill(6, y, w - 6, y + 1, 0x40FFFFFF);
 		y += 4;
-		g.text(font, "§7Quest-Kosten", 6, y, 0xFFFFFFFF, true);
+		g.text(font, "§7Quest Cost", 6, y, 0xFFFFFFFF, true);
 		Ui.rightText(g, font, "§c-" + TextUtil.formatCoins(b.cost), w - 6, y, 0xFFFFFFFF);
 		y += 12;
 
 		// Gewinn groß
 		Ui.round(g, 4, y - 1, w - 4, y + 19, profit >= 0 ? 0x302ECC71 : 0x30E74C3C);
-		Ui.text(g, font, "§7GEWINN", 8, y + 1, 0.75f, 0xFFFFFFFF, false);
+		Ui.text(g, font, "§7PROFIT", 8, y + 1, 0.75f, 0xFFFFFFFF, false);
 		String big = (profit >= 0 ? "§a§l" : "§c§l") + TextUtil.formatCoins(profit);
 		float bs = 1.5f;
 		Ui.text(g, font, big, w - 8 - font.width(big) * bs, y + 3, bs, 0xFFFFFFFF, true);

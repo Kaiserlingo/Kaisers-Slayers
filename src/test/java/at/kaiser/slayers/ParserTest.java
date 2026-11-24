@@ -26,6 +26,22 @@ class ParserTest {
 	}
 
 	@Test
+	void ownerLabels() {
+		// echtes Format aus dem Debug-Dump (Hypixel 2026)
+		assertTrue(NameParser.isOwnerLabel("Kaiserlingo's SLAYER BOSS", "Kaiserlingo"));
+		assertTrue(NameParser.isOwnerLabel("kaiserlingo's slayer boss", "Kaiserlingo"));
+		assertFalse(NameParser.isOwnerLabel("Steve's SLAYER BOSS", "Kaiserlingo"));
+		assertFalse(NameParser.isOwnerLabel("Kaiserlingo2's SLAYER BOSS", "Kaiserlingo"));
+		assertFalse(NameParser.isOwnerLabel("xKaiserlingo's SLAYER BOSS", "Kaiserlingo"));
+		assertTrue(NameParser.isOwnerLabel("Spawned by: Kaiserlingo", "Kaiserlingo"));
+		assertTrue(NameParser.isOwnerMarker("Steve's SLAYER BOSS"));
+		assertFalse(NameParser.isOwnerMarker("NICE! SLAYER BOSS SLAIN!"));
+		assertFalse(NameParser.isOwnerMarker("[Lv655]  Voidgloom Seraph IV 100 Hits"));
+		assertEquals(100, NameParser.hits("[Lv655]  Voidgloom Seraph IV 100 Hits"));
+		assertEquals(238, NameParser.timerSeconds("03:58"));
+	}
+
+	@Test
 	void numbersAndTime() {
 		assertEquals(1500, TextUtil.parseNumber("1.5k"), 0.001);
 		assertEquals("1:05", TextUtil.formatDuration(65_000));

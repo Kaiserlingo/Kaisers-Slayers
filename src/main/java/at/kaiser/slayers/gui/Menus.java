@@ -22,11 +22,11 @@ public final class Menus {
 	public static final List<Category> CATEGORIES = new ArrayList<>();
 
 	static {
-		CATEGORIES.add(new Category("Übersicht", new ItemStack(Items.NETHER_STAR), 0xFFE74C3C, null, true, false));
+		CATEGORIES.add(new Category("Overview", new ItemStack(Items.NETHER_STAR), 0xFFE74C3C, null, true, false));
 		CATEGORIES.add(new Category("Alerts", new ItemStack(Items.BELL), 0xFFF39C12, null, false, false));
-		CATEGORIES.add(new Category("Welt & Highlights", new ItemStack(Items.BEACON), 0xFF55FFFF, null, false, false));
+		CATEGORIES.add(new Category("World & Highlights", new ItemStack(Items.BEACON), 0xFF55FFFF, null, false, false));
 		CATEGORIES.add(new Category("Tracker", new ItemStack(Items.CLOCK), 0xFF3498DB, null, false, false));
-		CATEGORIES.add(new Category("Profit-Tracker", new ItemStack(Items.GOLD_INGOT), 0xFFFFC234, null, false, true));
+		CATEGORIES.add(new Category("Profit Tracker", new ItemStack(Items.GOLD_INGOT), 0xFFFFC234, null, false, true));
 		CATEGORIES.add(new Category("HUD", new ItemStack(Items.PAINTING), 0xFF9B59B6, null, false, false));
 		CATEGORIES.add(new Category("Gambling", new ItemStack(Items.EMERALD), 0xFF2ECC71, null, false, false));
 		for (SlayerType t : SlayerType.values()) {
@@ -43,9 +43,9 @@ public final class Menus {
 	public static List<Option> options(Category cat) {
 		List<Option> o = switch (cat.name()) {
 			case "Alerts" -> alerts();
-			case "Welt & Highlights" -> world();
+			case "World & Highlights" -> world();
 			case "Tracker" -> tracker();
-			case "Profit-Tracker" -> profit();
+			case "Profit Tracker" -> profit();
 			case "HUD" -> hud();
 			case "Gambling" -> gambling();
 			default -> cat.slayer() != null ? slayer(cat.slayer()) : new ArrayList<>();
@@ -57,27 +57,29 @@ public final class Menus {
 	static List<Option> alerts() {
 		List<Option> o = new ArrayList<>();
 		o.add(Option.header("Boss"));
-		o.add(Option.toggle("Boss-Spawn-Alert", "Große Einblendung + Sound, sobald dein Boss spawnt.", () -> c().spawnAlert, v -> c().spawnAlert = v));
-		o.add(Option.toggle("Boss spawnt gleich", "Vorwarnung kurz bevor der Boss spawnt.", () -> c().soonSpawnAlert, v -> c().soonSpawnAlert = v));
-		o.add(Option.slider("Vorwarnung ab", "Ab welchem Quest-Fortschritt die Vorwarnung kommt.", 50, 99, 1,
+		o.add(Option.toggle("Boss Spawn Alert", "Big title + sound as soon as your boss spawns.", () -> c().spawnAlert, v -> c().spawnAlert = v));
+		o.add(Option.toggle("Boss Spawning Soon", "Heads-up shortly before your boss spawns.", () -> c().soonSpawnAlert, v -> c().soonSpawnAlert = v));
+		o.add(Option.slider("Spawning Soon At", "Quest progress (Combat XP) at which the heads-up appears.", 50, 99, 1,
 				() -> (double) c().soonSpawnPercent, v -> c().soonSpawnPercent = (int) Math.round(v), v -> (int) v + "%"));
-		o.add(Option.toggle("Boss-Zeitwarnung", "Warnung, wenn das Zeitlimit des Bosses bald abläuft.", () -> c().bossTimeWarning, v -> c().bossTimeWarning = v));
-		o.add(Option.slider("Warnung bei", "Sekunden vor Ablauf des Zeitlimits.", 5, 90, 5,
-				() -> (double) c().bossTimeWarnSec, v -> c().bossTimeWarnSec = (int) Math.round(v), v -> (int) v + "s Rest"));
-		o.add(Option.toggle("Quest-Failed-Alert", "Einblendung, wenn der Quest fehlschlägt.", () -> c().failAlert, v -> c().failAlert = v));
-		o.add(Option.header("Minibosse"));
-		o.add(Option.toggle("Miniboss-Alert", "Einblendung + Sound, wenn ein Miniboss neben dir spawnt.", () -> c().minibossAlert, v -> c().minibossAlert = v));
-		o.add(Option.toggle("Miniboss-Waypoint", "Pfeil + Entfernung zum Miniboss oben am Bildschirm.", () -> c().minibossWaypoint, v -> c().minibossWaypoint = v));
-		o.add(Option.slider("Waypoint-Dauer", "Wie lange der Pfeil zum Miniboss sichtbar bleibt.", 5, 60, 5,
+		o.add(Option.toggle("Boss Time Warning", "Warning when the boss timer is about to run out.", () -> c().bossTimeWarning, v -> c().bossTimeWarning = v));
+		o.add(Option.slider("Warn At", "Seconds left on the boss timer.", 5, 90, 5,
+				() -> (double) c().bossTimeWarnSec, v -> c().bossTimeWarnSec = (int) Math.round(v), v -> (int) v + "s left"));
+		o.add(Option.toggle("Quest Failed Alert", "Title when your Slayer Quest fails.", () -> c().failAlert, v -> c().failAlert = v));
+		o.add(Option.toggle("Call Maddox Message", "Clickable [CALL MADDOX] chat message when your quest fails (runs /call slayer – needs an Abiphone).",
+				() -> c().callMaddoxMessage, v -> c().callMaddoxMessage = v));
+		o.add(Option.header("Minibosses"));
+		o.add(Option.toggle("Miniboss Alert", "Title + sound when a miniboss spawns next to you.", () -> c().minibossAlert, v -> c().minibossAlert = v));
+		o.add(Option.toggle("Miniboss Waypoint", "Arrow + distance to the miniboss at the top of the screen.", () -> c().minibossWaypoint, v -> c().minibossWaypoint = v));
+		o.add(Option.slider("Waypoint Duration", "How long the miniboss arrow stays visible.", 5, 60, 5,
 				() -> (double) c().waypointSeconds, v -> c().waypointSeconds = (int) Math.round(v), v -> (int) v + "s"));
-		o.add(Option.header("Allgemein"));
-		o.add(Option.toggle("Drop-Alert", "Einblendung bei CRAZY RARE / INSANE / RNGesus Drops.", () -> c().dropAlert, v -> c().dropAlert = v));
-		o.add(Option.toggle("Sounds", "Alle Sounds der Mod.", () -> c().sounds, v -> c().sounds = v));
-		o.add(Option.slider("Alert-Größe", "Größe der großen Einblendungen.", 1.5, 5, 0.25,
+		o.add(Option.header("General"));
+		o.add(Option.toggle("Rare Drop Alert", "Title on CRAZY RARE / INSANE / RNGesus drops.", () -> c().dropAlert, v -> c().dropAlert = v));
+		o.add(Option.toggle("Sounds", "All sounds of the mod.", () -> c().sounds, v -> c().sounds = v));
+		o.add(Option.slider("Alert Size", "Size of the big titles.", 1.5, 5, 0.25,
 				() -> (double) c().alertScale, v -> c().alertScale = v.floatValue(), v -> String.format(Locale.ROOT, "%.2fx", v)));
-		o.add(Option.action("Alert testen", "Zeigt einen Test-Alert.", "▶ Test", () -> {
+		o.add(Option.action("Test Alert", "Shows a test alert.", "▶ Test", () -> {
 			Minecraft.getInstance().gui.setScreen(null);
-			at.kaiser.slayers.hud.Feedback.alert("§c§lBOSS SPAWNED!", "§7So sieht ein Alert aus", 2000,
+			at.kaiser.slayers.hud.Feedback.alert("§c§lBOSS SPAWNED!", "§7This is what an alert looks like", 2000,
 					net.minecraft.sounds.SoundEvents.PLAYER_LEVELUP, 0.6f);
 		}));
 		return o;
@@ -85,116 +87,130 @@ public final class Menus {
 
 	static List<Option> world() {
 		List<Option> o = new ArrayList<>();
-		o.add(Option.header("Lichtstrahlen"));
-		o.add(Option.toggle("Strahlen aktiv", "Hauptschalter für alle Lichtstrahlen in der Welt.", () -> c().beamsEnabled, v -> c().beamsEnabled = v));
-		o.add(Option.color("Miniboss-Strahl", "Farbe des Strahls über Minibossen.", () -> c().minibossBeamColor, v -> c().minibossBeamColor = v));
+		o.add(Option.header("Your Boss Fight"));
+		o.add(Option.toggle("Hide Others During Your Boss", "While your boss is alive: no waypoints, beams, tracers or highlights for other players' bosses and minibosses.",
+				() -> c().hideOthersDuringBoss, v -> c().hideOthersDuringBoss = v));
+		o.add(Option.header("Beams"));
+		o.add(Option.toggle("Beams", "Master switch for all beacon beams in the world.", () -> c().beamsEnabled, v -> c().beamsEnabled = v));
+		o.add(Option.color("Miniboss Beam Color", "Color of the beam above minibosses.", () -> c().minibossBeamColor, v -> c().minibossBeamColor = v, 0x55FFFF));
+		o.add(Option.header("Tracers"));
+		o.add(Option.toggle("Miniboss Tracer", "Line from you to every miniboss (can also be toggled per slayer).", () -> c().minibossTracer, v -> c().minibossTracer = v));
+		o.add(Option.color("Tracer Color", "Color of the miniboss tracer line.", () -> c().minibossTracerColor, v -> c().minibossTracerColor = v, 0x55FFFF));
 		o.add(Option.header("Highlights"));
-		o.add(Option.color("Miniboss-Highlight", "Farbe des Leucht-Umrisses von Minibossen.", () -> c().minibossColor, v -> c().minibossColor = v));
-		o.add(Option.toggle("Fremde Bosse markieren", "Bosse anderer Spieler leuchten in einer eigenen Farbe.", () -> c().otherBossGlow, v -> c().otherBossGlow = v));
-		o.add(Option.color("Farbe fremder Bosse", "Leuchtfarbe für Bosse anderer Spieler.", () -> c().otherBossColor, v -> c().otherBossColor = v));
-		o.add(Option.slider("Drops leuchten für", "Wie lange Drops nach dem Kill am Boden leuchten.", 5, 60, 5,
+		o.add(Option.color("Miniboss Highlight Color", "Glow outline color of minibosses.", () -> c().minibossColor, v -> c().minibossColor = v, 0x5555FF));
+		o.add(Option.toggle("Highlight Other Bosses", "Bosses of other players glow in their own color.", () -> c().otherBossGlow, v -> c().otherBossGlow = v));
+		o.add(Option.color("Other Bosses Color", "Glow color for bosses of other players.", () -> c().otherBossColor, v -> c().otherBossColor = v, 0x888888));
+		o.add(Option.slider("Ground Drop Highlight", "How long drops glow after the kill (only if \"Highlight Ground Drops\" is on in the slayer menu).", 5, 60, 5,
 				() -> (double) c().dropGlowSeconds, v -> c().dropGlowSeconds = (int) Math.round(v), v -> (int) v + "s"));
-		o.add(Option.header("Boss-Timer"));
-		o.add(Option.slider("Boss-Zeitlimit", "Fallback, falls Hypixel keinen Timer am Boss zeigt.", 60, 300, 10,
+		o.add(Option.header("Boss Timer"));
+		o.add(Option.slider("Boss Time Limit", "Fallback if Hypixel shows no timer above the boss.", 60, 300, 10,
 				() -> (double) c().bossTimeLimitSec, v -> c().bossTimeLimitSec = (int) Math.round(v), v -> (int) v + "s"));
 		return o;
 	}
 
 	static List<Option> tracker() {
 		List<Option> o = new ArrayList<>();
-		o.add(Option.toggle("Kill-Zeit im Chat", "Nach jedem Kill: Kill-Zeit + Rekord im Chat.", () -> c().killMessage, v -> c().killMessage = v));
-		o.add(Option.toggle("Quest-Zeit im Chat", "Spawn- und Gesamtzeit des Quests im Chat.", () -> c().questTimeMessage, v -> c().questTimeMessage = v));
-		o.add(Option.toggle("Level-Prognose", "XP bis zum nächsten Slayer-Level, Bosse + Zeit.", () -> c().showLevelEta, v -> c().showLevelEta = v));
-		o.add(Option.action("Session zurücksetzen", "Setzt Kills, Zeiten und Session-Profit auf 0.", "Reset", () -> {
+		o.add(Option.toggle("Kill Time in Chat", "After every kill: kill time + PB in chat.", () -> c().killMessage, v -> c().killMessage = v));
+		o.add(Option.toggle("Quest Time in Chat", "Spawn time and total quest time in chat.", () -> c().questTimeMessage, v -> c().questTimeMessage = v));
+		o.add(Option.toggle("Level ETA", "Slayer XP to the next level, bosses + time left.", () -> c().showLevelEta, v -> c().showLevelEta = v));
+		o.add(Option.action("Reset Session", "Resets kills, times and session profit to 0.", "Reset", () -> {
 			KaisersSlayers.tracker().resetSession();
-			KaisersSlayers.chat("§aSession zurückgesetzt.");
+			KaisersSlayers.chat("§aSession reset.");
 		}));
-		o.add(Option.action("Debug-Info", "Schreibt alle Namensschilder in deiner Nähe in eine Datei – hilft beim Melden von Fehlern.", "Erstellen",
+		o.add(Option.action("Debug Info", "Writes all nametags around you to a file – helps with bug reports.", "Create",
 				KaisersSlayers::writeDebugDump));
 		return o;
 	}
 
 	static List<Option> profit() {
 		List<Option> o = new ArrayList<>();
-		o.add(Option.toggle("Profit-Tracker", "Eigenes Profit-HUD mit Drops, Kosten und Gewinn.", () -> c().profitEnabled, v -> c().profitEnabled = v));
-		o.add(Option.choice("Zeitraum", "Session = seit Spielstart/Reset, Gesamt = alles bisher.", List.of("SESSION", "TOTAL"),
-				v -> v.equals("TOTAL") ? "Gesamt" : "Session", () -> c().profitMode, v -> c().profitMode = v));
-		o.add(Option.toggle("Sack-Drops zählen", "Auch Items aus [Sacks]-Nachrichten zählen (z. B. Revenant Flesh).", () -> c().profitCountSacks, v -> c().profitCountSacks = v));
-		o.add(Option.choice("Preis-Modus", "Instant-Sell = sofort verkaufen, Sell-Offer = mit Angebot.", List.of(true, false),
-				v -> v ? "Instant-Sell" : "Sell-Offer", () -> c().instantSellPrices, v -> c().instantSellPrices = v));
-		o.add(Option.choice("Quest-Kosten", "Aatrox \"Slashed Pricing\" halbiert die Quest-Kosten.", List.of(1.0, 0.5),
+		o.add(Option.toggle("Profit Tracker", "Own profit HUD with drops, quest cost and profit.", () -> c().profitEnabled, v -> c().profitEnabled = v));
+		o.add(Option.toggle("Tracker in Inventory", "Shows the profit tracker next to your inventory and chests – with buttons for Session/Total, Instant Sell/Sell Offer and Reset.",
+				() -> c().inventoryTracker, v -> c().inventoryTracker = v));
+		o.add(Option.choice("Period", "Session = since game start/reset, Total = everything so far.", List.of("SESSION", "TOTAL"),
+				v -> v.equals("TOTAL") ? "Total" : "Session", () -> c().profitMode, v -> c().profitMode = v));
+		o.add(Option.toggle("Count Sack Drops", "Also count items from [Sacks] messages (e.g. Revenant Flesh).", () -> c().profitCountSacks, v -> c().profitCountSacks = v));
+		o.add(Option.choice("Price Mode", "Bazaar price: Instant Sell or Sell Offer.", List.of(true, false),
+				v -> v ? "Instant Sell" : "Sell Offer", () -> c().instantSellPrices, v -> c().instantSellPrices = v));
+		o.add(Option.choice("Quest Cost", "Aatrox perk \"Slashed Pricing\" halves the quest cost.", List.of(1.0, 0.5),
 				v -> v == 1.0 ? "Normal (100%)" : "Aatrox (50%)", () -> c().costMultiplier, v -> {
 					c().costMultiplier = v;
 					KaisersSlayers.tracker().setCostMultiplier(v);
 				}));
-		o.add(Option.slider("Max. Zeilen", "Wie viele Items im HUD einzeln gezeigt werden.", 3, 20, 1,
+		o.add(Option.slider("Max Lines", "How many items the HUD lists individually.", 3, 20, 1,
 				() -> (double) c().profitMaxItems, v -> c().profitMaxItems = (int) Math.round(v), v -> String.valueOf((int) v)));
-		o.add(Option.choice("Mindestwert", "Items darunter werden zusammengefasst.", List.of(0L, 1_000L, 10_000L, 100_000L, 1_000_000L),
-				v -> v == 0 ? "Alle" : "ab " + TextUtil.formatCoins(v), () -> c().profitMinValue, v -> c().profitMinValue = v));
-		o.add(Option.action("Preise neu laden", "Holt sofort neue Bazaar-Preise.", "Laden", () -> KaisersSlayers.prices().refresh()));
-		o.add(Option.header("Items – klicken zum Aus-/Einblenden"));
+		o.add(Option.choice("Min Value", "Items below this value are grouped together.", List.of(0L, 1_000L, 10_000L, 100_000L, 1_000_000L),
+				v -> v == 0 ? "All" : "≥ " + TextUtil.formatCoins(v), () -> c().profitMinValue, v -> c().profitMinValue = v));
+		o.add(Option.action("Refresh Prices", "Fetches new Bazaar / Lowest BIN prices right now.", "Refresh", () -> KaisersSlayers.prices().refresh()));
+		o.add(Option.header("Items – click to hide/show"));
 		return o;
 	}
 
 	static List<Option> hud() {
 		List<Option> o = new ArrayList<>();
-		o.add(Option.action("HUD-Editor", "HUDs mit der Maus verschieben (ziehen) und skalieren (Mausrad).", "Öffnen",
+		o.add(Option.action("HUD Editor", "Drag HUDs with the mouse and scale them with the scroll wheel.", "Open",
 				() -> Minecraft.getInstance().gui.setScreen(new HudEditorScreen(Minecraft.getInstance().gui.screen()))));
-		o.add(Option.toggle("Slayer-HUD", "Quest, Fortschritt, Zeiten, Level.", () -> c().slayerHud.enabled, v -> c().slayerHud.enabled = v));
-		o.add(Option.toggle("Profit-HUD", "Der Profit-Tracker als eigene Karte.", () -> c().profitHud.enabled, v -> c().profitHud.enabled = v));
-		o.add(Option.toggle("Hintergrund", "Karten-Hintergrund der HUDs.", () -> c().hudBackground, v -> c().hudBackground = v));
-		o.add(Option.toggle("Nur bei aktivem Quest", "HUD nur zeigen, wenn ein Slayer-Quest läuft.", () -> c().hudOnlyWhenActive, v -> c().hudOnlyWhenActive = v));
-		o.add(Option.toggle("Waypoint-Pfeil", "Pfeil + Entfernung zu Minibossen und Beacons.", () -> c().waypointArrow, v -> c().waypointArrow = v));
-		o.add(Option.slider("Boss-Panel Abstand", "Abstand der Boss-Infos unter dem Fadenkreuz.", 8, 80, 4,
+		o.add(Option.toggle("Slayer HUD", "Quest, progress, times, level.", () -> c().slayerHud.enabled, v -> c().slayerHud.enabled = v));
+		o.add(Option.toggle("Profit HUD", "The profit tracker as its own card.", () -> c().profitHud.enabled, v -> c().profitHud.enabled = v));
+		o.add(Option.toggle("Background", "Card background of the HUDs.", () -> c().hudBackground, v -> c().hudBackground = v));
+		o.add(Option.toggle("Only With Active Quest", "Only show the HUD while a Slayer Quest is running.", () -> c().hudOnlyWhenActive, v -> c().hudOnlyWhenActive = v));
+		o.add(Option.toggle("Waypoint Arrow", "Arrow + distance to minibosses and Yang Glyph beacons.", () -> c().waypointArrow, v -> c().waypointArrow = v));
+		o.add(Option.slider("Boss Panel Offset", "Distance of the boss info below your crosshair.", 8, 80, 4,
 				() -> (double) c().bossPanelOffsetY, v -> c().bossPanelOffsetY = (int) Math.round(v), v -> (int) v + "px"));
-		o.add(Option.color("Menü-Akzentfarbe", "Farbe der Hervorhebungen in diesem Menü.", () -> c().accentColor, v -> c().accentColor = v));
+		o.add(Option.color("Menu Accent Color", "Highlight color of this menu and the HUDs.", () -> c().accentColor, v -> c().accentColor = v, 0xE74C3C));
 		return o;
 	}
 
 	static List<Option> gambling() {
 		List<Option> o = new ArrayList<>();
-		o.add(Option.toggle("Gambling-Animation", "Hauptschalter (zusätzlich pro Slayer einstellbar).", () -> c().gamblingEnabled, v -> c().gamblingEnabled = v));
-		o.add(Option.choice("Animation", "Kisten-Öffnung, Slot-Machine, Glücksrad, Karten – oder jedes Mal zufällig.",
+		o.add(Option.toggle("Gambling Animation", "Master switch (can also be toggled per slayer).", () -> c().gamblingEnabled, v -> c().gamblingEnabled = v));
+		o.add(Option.choice("Animation", "Case opening, slot machine, wheel, cards – or random every time.",
 				List.of("CASE", "SLOTS", "WHEEL", "CARDS", "RANDOM"), Menus::styleName, () -> c().gamblingStyle, v -> c().gamblingStyle = v));
-		o.add(Option.slider("Dauer", "Wie lange gedreht wird.", 2, 12, 0.5,
+		o.add(Option.slider("Duration", "How long it spins.", 2, 12, 0.5,
 				() -> c().gamblingDurationMs / 1000.0, v -> c().gamblingDurationMs = (int) Math.round(v * 1000), v -> String.format(Locale.ROOT, "%.1fs", v)));
-		o.add(Option.choice("Auslöser", "Bei jedem Kill oder nur bei RARE DROP und besser.", List.of("ALWAYS", "RARE_ONLY"),
-				v -> v.equals("ALWAYS") ? "Jeder Kill" : "Nur Rare Drops", () -> c().gamblingTrigger, v -> c().gamblingTrigger = v));
-		o.add(Option.toggle("HUD + Chat ausblenden", "Ab dem Kill alles ausblenden, damit du nicht gespoilert wirst.", () -> c().gamblingHideHud, v -> c().gamblingHideHud = v));
-		o.add(Option.header("Effekte"));
-		o.add(Option.toggle("Partikel & Konfetti", "Funken beim Gewinn, Konfetti beim Jackpot.", () -> c().gamblingParticles, v -> c().gamblingParticles = v));
-		o.add(Option.toggle("Bildschirm-Wackeln", "Kurzes Wackeln beim Gewinn.", () -> c().gamblingShake, v -> c().gamblingShake = v));
-		o.add(Option.toggle("Blitz", "Heller Blitz beim Aufdecken.", () -> c().gamblingFlash, v -> c().gamblingFlash = v));
-		o.add(Option.toggle("Sounds", "Tick-Geräusche und Gewinn-Sounds.", () -> c().gamblingSounds, v -> c().gamblingSounds = v));
-		o.add(Option.slider("Abdunkeln", "Wie stark der Hintergrund abgedunkelt wird.", 30, 100, 5,
+		o.add(Option.choice("Trigger", "On every kill or only on RARE DROP and better.", List.of("ALWAYS", "RARE_ONLY"),
+				v -> v.equals("ALWAYS") ? "Every Kill" : "Rare Drops Only", () -> c().gamblingTrigger, v -> c().gamblingTrigger = v));
+		o.add(Option.toggle("Hide HUD + Chat", "Hides everything from the kill on so nothing spoils your drop.", () -> c().gamblingHideHud, v -> c().gamblingHideHud = v));
+		o.add(Option.header("Effects"));
+		o.add(Option.toggle("Particles & Confetti", "Sparks on a win, confetti on a jackpot.", () -> c().gamblingParticles, v -> c().gamblingParticles = v));
+		o.add(Option.toggle("Screen Shake", "Short shake on a win.", () -> c().gamblingShake, v -> c().gamblingShake = v));
+		o.add(Option.toggle("Flash", "Bright flash on the reveal.", () -> c().gamblingFlash, v -> c().gamblingFlash = v));
+		o.add(Option.toggle("Sounds", "Tick sounds and win sounds.", () -> c().gamblingSounds, v -> c().gamblingSounds = v));
+		o.add(Option.slider("Dim Background", "How much the background gets darkened.", 30, 100, 5,
 				() -> (double) c().gamblingDim, v -> c().gamblingDim = (int) Math.round(v), v -> (int) v + "%"));
-		o.add(Option.color("Akzentfarbe", "Farbe von Rahmen, Zeiger und Lichtern.", () -> c().gamblingAccent, v -> c().gamblingAccent = v));
-		o.add(Option.choice("Jackpot ab", "Ab diesem Drop-Wert gibt es den Jackpot-Effekt.",
+		o.add(Option.color("Accent Color", "Color of frame, pointer and lights.", () -> c().gamblingAccent, v -> c().gamblingAccent = v, 0xFFD700));
+		o.add(Option.choice("Jackpot From", "Drops worth at least this get the jackpot effect.",
 				List.of(1_000_000L, 5_000_000L, 10_000_000L, 50_000_000L, 100_000_000L), v -> TextUtil.formatCoins(v),
 				() -> c().gamblingJackpotValue, v -> c().gamblingJackpotValue = v));
-		o.add(Option.toggle("Wert anzeigen", "Coin-Wert des Drops beim Ergebnis.", () -> c().gamblingShowValue, v -> c().gamblingShowValue = v));
-		o.add(Option.toggle("Eigene Drops in der Walze", "Items, die du schon gedroppt hast, erscheinen auch.", () -> c().gamblingUseOwnDrops, v -> c().gamblingUseOwnDrops = v));
-		o.add(Option.header("Vorschau"));
+		o.add(Option.toggle("Show Value", "Coin value of the drop on the result.", () -> c().gamblingShowValue, v -> c().gamblingShowValue = v));
+		o.add(Option.toggle("Own Drops in the Reel", "Items you already dropped also show up.", () -> c().gamblingUseOwnDrops, v -> c().gamblingUseOwnDrops = v));
+		o.add(Option.header("Preview"));
 		for (String s : List.of("CASE", "SLOTS", "WHEEL", "CARDS")) {
-			o.add(Option.action(styleName(s), "Spielt die Animation mit einem zufälligen Drop ab.", "▶ Test", () -> preview(s)));
+			o.add(Option.action(styleName(s), "Plays the animation with a random drop.", "▶ Test", () -> preview(s)));
 		}
 		return o;
 	}
 
 	static List<Option> slayer(SlayerType t) {
 		List<Option> o = new ArrayList<>();
-		o.add(Option.header("Allgemein"));
+		o.add(Option.header("General"));
 		boolean special = false;
 		for (SlayerFeature f : SlayerFeature.forType(t)) {
 			if (f.type != null && !special) {
-				o.add(Option.header(t.bossName + " – Spezial"));
+				o.add(Option.header(t.bossName + " – Special"));
 				special = true;
 			}
 			o.add(Option.toggle(f.label, f.description, () -> c().feature(t, f), v -> c().setFeature(t, f, v)));
 		}
-		o.add(Option.header("Aussehen & Test"));
-		o.add(Option.color("Boss-Highlight-Farbe", "Farbe des Leucht-Umrisses deines Bosses.", () -> c().glowColor(t), v -> c().glowColors.put(t.key(), v)));
-		o.add(Option.action("Gambling-Vorschau", "Test-Animation mit den Drops dieses Slayers.", "▶ Test", () -> {
+		o.add(Option.header("Look & Test"));
+		String note = switch (t) {
+			case ENDERMAN -> " (\"Phase Color\" overrides it)";
+			case BLAZE -> " (\"Attunement Color\" overrides it)";
+			default -> "";
+		};
+		o.add(Option.color("Boss Highlight Color", "Glow outline color of your boss" + note + ".", () -> c().glowColor(t),
+				v -> c().glowColors.put(t.key(), v), t.defaultGlow));
+		o.add(Option.action("Gambling Preview", "Test animation with the drops of this slayer.", "▶ Test", () -> {
 			Minecraft.getInstance().gui.setScreen(null);
 			GamblingAnimation.preview(t, null);
 		}));
@@ -203,11 +219,11 @@ public final class Menus {
 
 	static String styleName(String s) {
 		return switch (s) {
-			case "CASE" -> "Kisten-Öffnung";
-			case "SLOTS" -> "Slot-Machine";
-			case "WHEEL" -> "Glücksrad";
-			case "CARDS" -> "Karten";
-			default -> "Zufällig";
+			case "CASE" -> "Case Opening";
+			case "SLOTS" -> "Slot Machine";
+			case "WHEEL" -> "Wheel of Fortune";
+			case "CARDS" -> "Cards";
+			default -> "Random";
 		};
 	}
 

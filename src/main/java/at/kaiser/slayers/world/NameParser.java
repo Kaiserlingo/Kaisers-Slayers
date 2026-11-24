@@ -51,10 +51,31 @@ public final class NameParser {
 	}
 
 	/** Gehört dieses Namensschild zu einem Boss, den ich gespawnt habe? */
+	/** "name's slayer boss" vorhanden und davor kein weiterer Namens-Buchstabe (sonst wäre es ein anderer Spieler) */
+	private static boolean ownsBoss(String low, String needle) {
+		int i = low.indexOf(needle);
+		while (i >= 0) {
+			if (i == 0 || !(Character.isLetterOrDigit(low.charAt(i - 1)) || low.charAt(i - 1) == '_')) return true;
+			i = low.indexOf(needle, i + 1);
+		}
+		return false;
+	}
+
+	/** Ist das ein Besitzer-Schild eines Slayer-Bosses ("Spawned by: X" oder "X's SLAYER BOSS")? */
+	public static boolean isOwnerMarker(String name) {
+		String low = name.toLowerCase(java.util.Locale.ROOT);
+		return low.contains("spawned by") || low.contains("'s slayer boss") || low.contains("’s slayer boss");
+	}
+
 	public static boolean isOwnerLabel(String name, String... myNames) {
-		if (!name.contains("Spawned by")) return false;
+		String low = name.toLowerCase(java.util.Locale.ROOT);
+		boolean spawnedBy = low.contains("spawned by");
 		for (String n : myNames) {
-			if (n != null && !n.isEmpty() && name.toLowerCase(java.util.Locale.ROOT).contains(n.toLowerCase(java.util.Locale.ROOT))) return true;
+			if (n == null || n.isEmpty()) continue;
+			String me = n.toLowerCase(java.util.Locale.ROOT);
+			// Hypixel: "Spawned by: Name" (alt) oder "Name's SLAYER BOSS" (aktuell)
+			if (spawnedBy && low.contains(me)) return true;
+			if (ownsBoss(low, me + "'s slayer boss") || ownsBoss(low, me + "’s slayer boss")) return true;
 		}
 		return false;
 	}

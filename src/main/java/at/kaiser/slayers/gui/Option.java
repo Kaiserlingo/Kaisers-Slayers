@@ -96,21 +96,71 @@ public abstract sealed class Option permits Option.Toggle, Option.Choice, Option
 	}
 
 	public static final class Color extends Option {
-		public static final List<Integer> PALETTE = List.of(0xE74C3C, 0xFF5555, 0xFFAA00, 0xFFD700, 0xFFFF55, 0x2ECC71, 0x55FF55,
-				0x55FFFF, 0x3498DB, 0x5555FF, 0xAA00FF, 0xFF55FF, 0xFFFFFF, 0x888888);
+		/** Schnellauswahl im Farbwähler (Minecraft-Farben + ein paar kräftige Extras) */
+		public static final List<Integer> PALETTE = List.of(
+				0xFF5555, 0xAA0000, 0xFFAA00, 0xFFD700, 0xFFFF55, 0x55FF55, 0x00AA00, 0x55FFFF,
+				0x00AAAA, 0x5555FF, 0x0000AA, 0xAA00FF, 0xFF55FF, 0xFFFFFF, 0xAAAAAA, 0x555555);
 		public final Supplier<Integer> get;
 		public final Consumer<Integer> set;
+		/** Standardfarbe (für "Reset"), kann null sein */
+		public final Integer defaultValue;
 
-		Color(String label, String desc, Supplier<Integer> get, Consumer<Integer> set) {
+		Color(String label, String desc, Supplier<Integer> get, Consumer<Integer> set, Integer defaultValue) {
 			super(label, desc);
 			this.get = get;
 			this.set = set;
+			this.defaultValue = defaultValue;
 		}
 
-		public void step(int dir) {
-			int idx = PALETTE.indexOf(get.get() & 0xFFFFFF);
-			idx = idx < 0 ? 0 : Math.floorMod(idx + dir, PALETTE.size());
-			set.accept(PALETTE.get(idx));
+		public int value() {
+			return get.get() & 0xFFFFFF;
+		}
+
+		public static String hex(int rgb) {
+			return String.format(java.util.Locale.ROOT, "#%06X", rgb & 0xFFFFFF);
+		}
+
+		/** "#ff8800", "ff8800" oder "f80" → RGB, sonst -1 */
+		public static int parseHex(String s) {
+			if (s == null) return -1;
+			String t = s.trim();
+			if (t.startsWith("#")) t = t.substring(1);
+			if (t.length() == 3) t = "" + t.charAt(0) + t.charAt(0) + t.charAt(1) + t.charAt(1) + t.charAt(2) + t.charAt(2);
+			if (t.length() != 6) return -1;
+			try {
+				return Integer.parseInt(t, 16);
+			} catch (NumberFormatException e) {
+				return -1;
+			}
+		}
+
+		/** HSV (je 0..1) → RGB */
+		public static int hsv(float h, float s, float v) {
+			h = (h % 1f + 1f) % 1f;
+			float c = v * s, x = c * (1 - Math.abs((h * 6) % 2 - 1)), m = v - c;
+			float r, g, b;
+			switch ((int) (h * 6)) {
+				case 0 -> { r = c; g = x; b = 0; }
+				case 1 -> { r = x; g = c; b = 0; }
+				case 2 -> { r = 0; g = c; b = x; }
+				case 3 -> { r = 0; g = x; b = c; }
+				case 4 -> { r = x; g = 0; b = c; }
+				default -> { r = c; g = 0; b = x; }
+			}
+			return Math.round((r + m) * 255) << 16 | Math.round((g + m) * 255) << 8 | Math.round((b + m) * 255);
+		}
+
+		/** RGB → {h, s, v} (je 0..1) */
+		public static float[] toHsv(int rgb) {
+			float r = (rgb >> 16 & 0xFF) / 255f, g = (rgb >> 8 & 0xFF) / 255f, b = (rgb & 0xFF) / 255f;
+			float max = Math.max(r, Math.max(g, b)), min = Math.min(r, Math.min(g, b)), d = max - min;
+			float h;
+			if (d == 0) h = 0;
+			else if (max == r) h = ((g - b) / d) / 6f;
+			else if (max == g) h = ((b - r) / d + 2) / 6f;
+			else h = ((r - g) / d + 4) / 6f;
+			if (h < 0) h += 1;
+			return new float[]{h, max == 0 ? 0 : d / max, max};
 		}
 	}
 
@@ -152,7 +202,11 @@ public abstract sealed class Option permits Option.Toggle, Option.Choice, Option
 	}
 
 	public static Option color(String label, String desc, Supplier<Integer> get, Consumer<Integer> set) {
-		return new Color(label, desc, get, set);
+		return new Color(label, desc, get, set, null);
+	}
+
+	public static Option color(String label, String desc, Supplier<Integer> get, Consumer<Integer> set, int defaultValue) {
+		return new Color(label, desc, get, set, defaultValue);
 	}
 
 	public static Option action(String label, String desc, String button, Runnable run) {

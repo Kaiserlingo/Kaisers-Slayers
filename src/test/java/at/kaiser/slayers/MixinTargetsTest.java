@@ -28,5 +28,10 @@ class MixinTargetsTest {
 		Class<?> c = Class.forName("net.minecraft.client.renderer.blockentity.state.BlockEntityRenderState", false, getClass().getClassLoader());
 		assertTrue(Arrays.stream(c.getDeclaredFields()).anyMatch(f -> f.getName().equals("blockState")),
 				"BlockEntityRenderState#blockState fehlt – Accessor anpassen");
+		Class<?> cs = Class.forName("net.minecraft.client.gui.screens.inventory.AbstractContainerScreen", false, getClass().getClassLoader());
+		for (String f : new String[]{"leftPos", "topPos", "imageWidth"}) {
+			assertTrue(Arrays.stream(cs.getDeclaredFields()).anyMatch(x -> x.getName().equals(f)),
+					"AbstractContainerScreen#" + f + " fehlt – AbstractContainerScreenAccessor anpassen");
+		}
 	}
 }

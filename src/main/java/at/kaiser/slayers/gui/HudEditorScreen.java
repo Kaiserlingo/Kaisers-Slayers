@@ -20,7 +20,7 @@ public class HudEditorScreen extends Screen {
 	private final int[] profitBox = new int[4];
 
 	public HudEditorScreen(Screen parent) {
-		super(Component.literal("HUD-Editor"));
+		super(Component.literal("HUD Editor"));
 		this.parent = parent;
 	}
 
@@ -39,20 +39,20 @@ public class HudEditorScreen extends Screen {
 		for (int y = 0; y < height; y += 20) g.fill(0, y, width, y + 1, 0x10FFFFFF);
 
 		// Slayer-HUD
-		drawElement(g, cfg.slayerHud, slayerBox, mx, my, SlayerHud.lastWidth, () -> SlayerHud.draw(g, font, KaisersSlayers.tracker(), cfg, now), "Slayer-HUD");
+		drawElement(g, cfg.slayerHud, slayerBox, mx, my, SlayerHud.lastWidth, () -> SlayerHud.draw(g, font, KaisersSlayers.tracker(), cfg, now), "Slayer HUD");
 		// Profit-HUD
 		SlayerType type = KaisersSlayers.tracker().type() != null ? KaisersSlayers.tracker().type() : SlayerType.ZOMBIE;
 		drawElement(g, cfg.profitHud, profitBox, mx, my, ProfitHud.WIDTH,
-				() -> ProfitHud.draw(g, font, type, ProfitHud.bucket(type, cfg), cfg), "Profit-HUD");
+				() -> ProfitHud.draw(g, font, type, ProfitHud.bucket(type, cfg), cfg), "Profit HUD");
 
 		// Hilfe
 		int acc = 0xFF000000 | cfg.accentColor;
-		String help = "§fZiehen §7= verschieben   §fMausrad §7= Größe   §fRechtsklick §7= an/aus   §fR §7= zurücksetzen   §fESC §7= fertig";
+		String help = "§fDrag §7= move   §fScroll §7= size   §fRight-click §7= on/off   §fR §7= reset   §fESC §7= done";
 		float hs = Math.min(1f, (width - 30) / (float) font.width(help));
 		int hw = (int) (font.width(help) * hs);
 		Ui.panel(g, width / 2 - hw / 2 - 8, height - 24, width / 2 + hw / 2 + 8, height - 8, 0xE0111117, Ui.argb(acc, 0x80));
 		Ui.text(g, font, help, width / 2f - hw / 2f, height - 19, hs, 0xFFFFFFFF, false);
-		Ui.centered(g, font, "§l§nHUD-EDITOR", width / 2f, 8, 1.5f, acc, true);
+		Ui.centered(g, font, "§l§nHUD EDITOR", width / 2f, 8, 1.5f, acc, true);
 	}
 
 	private void drawElement(GuiGraphicsExtractor g, ModConfig.HudPos pos, int[] box, int mx, int my, int w, java.util.function.IntSupplier draw, String name) {
@@ -70,7 +70,7 @@ public class HudEditorScreen extends Screen {
 		boolean hover = Ui.inside(mx, my, x, y, x2, y2) || dragging == pos;
 		int c = pos.enabled ? (hover ? 0xFFFFFFFF : 0xA0FFFFFF) : 0xFFE74C3C;
 		g.outline(x - 2, y - 2, x2 - x + 4, y2 - y + 4, c);
-		String label = name + (pos.enabled ? "" : " §c(aus)") + " §7" + Math.round(pos.scale * 100) + "%";
+		String label = name + (pos.enabled ? "" : " §c(off)") + " §7" + Math.round(pos.scale * 100) + "%";
 		Ui.round(g, x - 2, y - 13, x - 2 + font.width(label) + 6, y - 2, 0xC0000000);
 		g.text(font, label, x + 1, y - 11, 0xFFFFFFFF, false);
 		if (!pos.enabled) g.fill(x, y, x2, y2, 0x80300000);

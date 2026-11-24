@@ -44,6 +44,16 @@ public class KsScreen extends Screen {
 	private long opened;
 	private final List<HitBox> hits = new ArrayList<>();
 
+	// ---------- Farbwähler (Popup) ----------
+	private static final int PICK_W = 230, PICK_H = 150, SV_W = 120, SV_H = 90;
+	private Option.Color picking;
+	private int pickOriginal;
+	private float pickH, pickS, pickV;
+	private String hexInput = "";
+	private boolean hexFocused;
+	private int pickDrag; // 0 = nichts, 1 = Farbfeld, 2 = Farbton-Leiste
+	private final List<HitBox> pickHits = new ArrayList<>();
+
 	private record HitBox(int x1, int y1, int x2, int y2, Runnable left, Runnable right) {}
 
 	public KsScreen() {
@@ -74,6 +84,7 @@ public class KsScreen extends Screen {
 	@Override
 	public void extractRenderState(GuiGraphicsExtractor g, int mx, int my, float delta) {
 		hits.clear();
+		pickHits.clear();
 		openAnim = Math.min(1f, (System.currentTimeMillis() - opened) / 180f);
 		scroll += (scrollTarget - scroll) * 0.35;
 		ModConfig cfg = KaisersSlayers.config();
@@ -93,13 +104,13 @@ public class KsScreen extends Screen {
 		g.fill(x1 + 1, y1 + HEADER_H, x2 - 1, y1 + HEADER_H + 1, Ui.argb(acc, 0x60));
 		Ui.icon(g, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.DIAMOND_SWORD), x1 + 8, y1 + 9, 1.0f);
 		Ui.text(g, font, "§lKAISER'S SLAYERS", x1 + 28, y1 + 8, 1.35f, 0xFFFFFFFF, true);
-		Ui.text(g, font, "§8Slayer-Begleiter für Hypixel SkyBlock · v" + KaisersSlayers.version(), x1 + 28, y1 + 22, 0.7f, 0xFFFFFFFF, false);
+		Ui.text(g, font, "§8Slayer companion for Hypixel SkyBlock · v" + KaisersSlayers.version(), x1 + 28, y1 + 22, 0.7f, 0xFFFFFFFF, false);
 
 		// Suchfeld
 		int sx2 = x2 - 8, sx1 = sx2 - 130, sy1 = y1 + 9, sy2 = sy1 + 16;
 		Ui.round(g, sx1, sy1, sx2, sy2, searchFocused ? Ui.argb(acc, 0xFF) : 0xFF2A2A36);
 		Ui.round(g, sx1 + 1, sy1 + 1, sx2 - 1, sy2 - 1, 0xFF0E0E13);
-		String shown = search.isEmpty() && !searchFocused ? "§8🔍 Suchen..." : "§f" + search + (searchFocused && (System.currentTimeMillis() / 500) % 2 == 0 ? "_" : "");
+		String shown = search.isEmpty() && !searchFocused ? "§8🔍 Search..." : "§f" + search + (searchFocused && (System.currentTimeMillis() / 500) % 2 == 0 ? "_" : "");
 		g.text(font, shown, sx1 + 5, sy1 + 4, 0xFFFFFFFF, false);
 		hits.add(new HitBox(sx1, sy1, sx2, sy2, () -> searchFocused = true, () -> {
 			search = "";
@@ -151,7 +162,7 @@ public class KsScreen extends Screen {
 		int cx1 = sbx2 + 10, cx2 = x2 - 10, cy1 = y1 + HEADER_H + 6, cy2 = y2 - FOOTER_H;
 		Menus.Category cat = Menus.CATEGORIES.get(category);
 		String title = search.isEmpty() ? (cat.slayer() != null ? cat.slayer().color + "§l" + cat.slayer().bossName : "§f§l" + cat.name())
-				: "§f§lSuche: §7\"" + search + "\"";
+				: "§f§lSearch: §7\"" + search + "\"";
 		Ui.text(g, font, title, cx1, cy1 + 2, 1.2f, 0xFFFFFFFF, true);
 		int listTop = cy1 + 18;
 
@@ -180,12 +191,13 @@ public class KsScreen extends Screen {
 
 		// ---------- Fußzeile ----------
 		g.fill(sbx2 + 1, y2 - FOOTER_H, x2 - 1, y2 - FOOTER_H + 1, 0x30FFFFFF);
-		button(g, mx, my, x2 - 78, y2 - 21, x2 - 8, y2 - 5, "Fertig", acc, this::onClose);
-		button(g, mx, my, x2 - 168, y2 - 21, x2 - 84, y2 - 5, "HUD-Editor", 0xFF3A3A48,
+		button(g, mx, my, x2 - 78, y2 - 21, x2 - 8, y2 - 5, "Done", acc, this::onClose);
+		button(g, mx, my, x2 - 168, y2 - 21, x2 - 84, y2 - 5, "HUD Editor", 0xFF3A3A48,
 				() -> minecraft.gui.setScreen(new HudEditorScreen(this)));
-		String hint = "§8Rechtsklick = zurück · Mausrad = scrollen";
+		String hint = "§8Right-click = back · Scroll = scroll";
 		if (font.width(hint) * 0.7f < (x2 - 172) - (sbx2 + 10)) Ui.text(g, font, hint, sbx2 + 10, y2 - 15, 0.7f, 0xFFFFFFFF, false);
 
+		if (picking != null) drawPicker(g, mx, my);
 		g.pose().popMatrix();
 	}
 
@@ -232,7 +244,7 @@ public class KsScreen extends Screen {
 		int acc = accent();
 		boolean inClip;
 		if (opts.isEmpty()) {
-			g.text(font, "§8Nichts gefunden.", x1, y + 4, 0xFFFFFFFF, false);
+			g.text(font, "§8Nothing found.", x1, y + 4, 0xFFFFFFFF, false);
 			return 20;
 		}
 		for (Option o : opts) {
@@ -265,7 +277,7 @@ public class KsScreen extends Screen {
 			case Option.Toggle t -> 24;
 			case Option.Choice<?> c -> 104;
 			case Option.Slider sl -> 120;
-			case Option.Color c -> 60;
+			case Option.Color c -> 74;
 			case Option.Action a -> Math.max(56, font.width(a.button) + 16);
 			default -> 0;
 		};
@@ -325,18 +337,13 @@ public class KsScreen extends Screen {
 				}, null));
 			}
 			case Option.Color c -> {
-				int col = 0xFF000000 | c.get.get();
-				g.text(font, "§8◀", x, cy - 4, 0xFFFFFFFF, false);
-				Ui.round(g, x + 12, cy - 7, x + w - 12, cy + 7, 0xFFFFFFFF);
-				Ui.round(g, x + 13, cy - 6, x + w - 13, cy + 6, col);
-				g.text(font, "§8▶", x + w - 7, cy - 4, 0xFFFFFFFF, false);
-				hits.add(new HitBox(x, cy - 8, x + w, cy + 8, () -> {
-					c.step(1);
-					changed();
-				}, () -> {
-					c.step(-1);
-					changed();
-				}));
+				int col = 0xFF000000 | c.value();
+				boolean hover = mouseIn && Ui.inside(mx, my, x, cy - 8, x + w, cy + 8);
+				Ui.round(g, x, cy - 8, x + w, cy + 8, hover ? 0xFF2A2A36 : 0xFF0E0E13);
+				Ui.round(g, x + 3, cy - 5, x + 21, cy + 5, 0xFFFFFFFF);
+				Ui.round(g, x + 4, cy - 4, x + 20, cy + 4, col);
+				g.text(font, (hover ? "§f" : "§7") + Option.Color.hex(c.value()), x + 25, cy - 4, 0xFFFFFFFF, false);
+				hits.add(new HitBox(x, cy - 8, x + w, cy + 8, () -> openPicker(c), () -> openPicker(c)));
 			}
 			case Option.Action a -> {
 				button(g, mx, my, x, cy - 8, x + w, cy + 8, a.button, acc, () -> {
@@ -353,10 +360,10 @@ public class KsScreen extends Screen {
 		SlayerType type = KaisersSlayers.tracker().type() != null ? KaisersSlayers.tracker().type() : SlayerType.ZOMBIE;
 		ProfitTracker.Bucket b = ProfitHud.bucket(type, cfg);
 		List<ProfitHud.Row> rows = ProfitHud.rows(type, b);
-		g.text(font, type.color + type.bossName + " §8· " + ("TOTAL".equals(cfg.profitMode) ? "Gesamt" : "Session"), x1 + 2, y, 0xFFFFFFFF, false);
+		g.text(font, type.color + type.bossName + " §8· " + ("TOTAL".equals(cfg.profitMode) ? "Total" : "Session"), x1 + 2, y, 0xFFFFFFFF, false);
 		y += 12;
 		if (rows.isEmpty()) {
-			g.text(font, "§8Noch keine Drops erfasst.", x1 + 2, y, 0xFFFFFFFF, false);
+			g.text(font, "§8No drops tracked yet.", x1 + 2, y, 0xFFFFFFFF, false);
 			return y + 12;
 		}
 		for (ProfitHud.Row r : rows) {
@@ -365,7 +372,7 @@ public class KsScreen extends Screen {
 			if (hover) Ui.round(g, x1, y - 2, x2, y + 11, 0x20FFFFFF);
 			g.fill(x1 + 3, y + 2, x1 + 6, y + 5, at.kaiser.slayers.gambling.LootPool.tierColor(r.tier()));
 			g.text(font, (hidden ? "§8§m" : "§f") + TextUtil.formatInt(r.count()) + "x " + r.name(), x1 + 10, y, 0xFFFFFFFF, false);
-			Ui.rightText(g, font, hidden ? "§8ausgeblendet" : "§6" + TextUtil.formatCoins(r.value()), x2 - 4, y, 0xFFFFFFFF);
+			Ui.rightText(g, font, hidden ? "§8hidden" : "§6" + TextUtil.formatCoins(r.value()), x2 - 4, y, 0xFFFFFFFF);
 			String name = r.name();
 			hits.add(new HitBox(x1, y - 1, x2, y + 11, () -> {
 				if (!cfg.hiddenItems.remove(name)) cfg.hiddenItems.add(name);
@@ -375,12 +382,12 @@ public class KsScreen extends Screen {
 		}
 		double profit = b.profit((n, c) -> ProfitHud.value(n, c));
 		y += 4;
-		g.text(font, "§7Kosten §c-" + TextUtil.formatCoins(b.cost) + "   §7Gewinn " + (profit >= 0 ? "§a" : "§c") + TextUtil.formatCoins(profit)
+		g.text(font, "§7Cost §c-" + TextUtil.formatCoins(b.cost) + "   §7Profit " + (profit >= 0 ? "§a" : "§c") + TextUtil.formatCoins(profit)
 				+ "   §7/h §6" + TextUtil.formatCoins(b.perHour(profit)), x1 + 2, y, 0xFFFFFFFF, false);
 		y += 14;
-		button(g, mx, my, x1, y, x1 + 110, y + 16, "Gesamt zurücksetzen", 0xFF5A2A2A, () -> {
+		button(g, mx, my, x1, y, x1 + 110, y + 16, "Reset Total", 0xFF5A2A2A, () -> {
 			KaisersSlayers.tracker().profit().resetTotal(type);
-			KaisersSlayers.chat("§7Gesamt-Profit für " + type.bossName + " zurückgesetzt.");
+			KaisersSlayers.chat("§7Total profit for " + type.bossName + " reset.");
 		});
 		return y + 20;
 	}
@@ -406,9 +413,9 @@ public class KsScreen extends Screen {
 			Ui.text(g, font, "§7" + t.levelName + " Slayer · " + lvl, cx + 34, cy + 19, 0.75f, 0xFFFFFFFF, false);
 			ProfitTracker.Bucket total = KaisersSlayers.tracker().profit().total(t);
 			double profit = total.profit((n, c) -> ProfitHud.value(n, c));
-			Ui.text(g, font, "§7Kills §f" + e.kills + "   §7Rekord §a" + (e.bestKillMs > 0 ? TextUtil.formatSeconds(e.bestKillMs) : "-"),
+			Ui.text(g, font, "§7Kills §f" + e.kills + "   §7PB §a" + (e.bestKillMs > 0 ? TextUtil.formatSeconds(e.bestKillMs) : "-"),
 					cx + 8, cy + 34, 0.75f, 0xFFFFFFFF, false);
-			Ui.text(g, font, "§7Profit gesamt " + (profit >= 0 ? "§6" : "§c") + TextUtil.formatCoins(profit)
+			Ui.text(g, font, "§7Total profit " + (profit >= 0 ? "§6" : "§c") + TextUtil.formatCoins(profit)
 					+ (e.rngMeterXp >= 0 ? "   §7RNG §d" + TextUtil.formatCoins(e.rngMeterXp) : ""), cx + 8, cy + 45, 0.75f, 0xFFFFFFFF, false);
 			final int idx = 7 + i;
 			hits.add(new HitBox(cx, cy, cx + cw, cy + ch, () -> select(idx), null));
@@ -419,9 +426,183 @@ public class KsScreen extends Screen {
 		Ui.round(g, x1, y, x2, y + 30, Ui.CARD);
 		g.text(font, "§f§lSession", x1 + 8, y + 5, 0xFFFFFFFF, false);
 		var s = KaisersSlayers.tracker().session();
-		Ui.text(g, font, "§7Bosse §f" + s.kills + "  §7pro Stunde §f" + String.format(java.util.Locale.ROOT, "%.1f", s.killsPerHour())
-				+ "  §7Zeit §f" + TextUtil.formatDuration(s.activeMs) + "  §7Gambling " + (cfg.gamblingEnabled ? "§aAN" : "§cAUS"), x1 + 8, y + 17, 0.75f, 0xFFFFFFFF, false);
+		Ui.text(g, font, "§7Bosses §f" + s.kills + "  §7per hour §f" + String.format(java.util.Locale.ROOT, "%.1f", s.killsPerHour())
+				+ "  §7Time §f" + TextUtil.formatDuration(s.activeMs) + "  §7Gambling " + (cfg.gamblingEnabled ? "§aON" : "§cOFF"), x1 + 8, y + 17, 0.75f, 0xFFFFFFFF, false);
 		return y - startY + 36;
+	}
+
+	// ============================================================ Farbwähler
+
+	/** Für automatische Tests */
+	public void openPickerForTest(int index) {
+		List<Option> opts = currentOptions();
+		int n = 0;
+		for (Option o : opts) {
+			if (o instanceof Option.Color c && n++ == index) {
+				openPicker(c);
+				return;
+			}
+		}
+	}
+
+	private void openPicker(Option.Color c) {
+		picking = c;
+		pickOriginal = c.value();
+		float[] hsv = Option.Color.toHsv(pickOriginal);
+		pickH = hsv[0];
+		pickS = hsv[1];
+		pickV = hsv[2];
+		hexInput = Option.Color.hex(pickOriginal).substring(1);
+		hexFocused = false;
+		pickDrag = 0;
+		click();
+	}
+
+	private void closePicker(boolean keep) {
+		if (picking == null) return;
+		if (!keep) picking.set.accept(pickOriginal);
+		picking = null;
+		pickDrag = 0;
+		hexFocused = false;
+		changed();
+	}
+
+	/** Neue Farbe sofort übernehmen (Live-Vorschau in der Welt) */
+	private void applyPick(int rgb, boolean updateHsv) {
+		if (picking == null) return;
+		rgb &= 0xFFFFFF;
+		picking.set.accept(rgb);
+		if (updateHsv) {
+			float[] hsv = Option.Color.toHsv(rgb);
+			if (hsv[1] > 0 && hsv[2] > 0) pickH = hsv[0]; // Farbton bei Grau/Schwarz behalten
+			pickS = hsv[1];
+			pickV = hsv[2];
+		}
+		if (!hexFocused) hexInput = Option.Color.hex(rgb).substring(1);
+	}
+
+	private int pickX1() { return width / 2 - PICK_W / 2; }
+	private int pickY1() { return height / 2 - PICK_H / 2; }
+
+	private void drawPicker(GuiGraphicsExtractor g, int mx, int my) {
+		int acc = accent();
+		g.fill(px1(), py1(), px2(), py2(), 0x99000000);
+		int x1 = pickX1(), y1 = pickY1(), x2 = x1 + PICK_W, y2 = y1 + PICK_H;
+		Ui.panel(g, x1, y1, x2, y2, 0xFA16161E, Ui.argb(acc, 0xC0));
+		g.text(font, "§f§l" + fit(font, picking.label, PICK_W - 16), x1 + 8, y1 + 7, 0xFFFFFFFF, false);
+
+		// Farbfeld (Sättigung → rechts, Helligkeit → oben)
+		int sx = x1 + 8, sy = y1 + 22;
+		for (int i = 0; i < SV_W; i += 2) {
+			int top = 0xFF000000 | Option.Color.hsv(pickH, i / (float) (SV_W - 1), 1f);
+			g.fillGradient(sx + i, sy, sx + i + 2, sy + SV_H, top, 0xFF000000);
+		}
+		int kx = sx + Math.round(pickS * (SV_W - 1)), ky = sy + Math.round((1 - pickV) * (SV_H - 1));
+		g.fill(kx - 3, ky - 3, kx + 4, ky - 2, 0xFFFFFFFF);
+		g.fill(kx - 3, ky + 3, kx + 4, ky + 4, 0xFFFFFFFF);
+		g.fill(kx - 3, ky - 2, kx - 2, ky + 3, 0xFFFFFFFF);
+		g.fill(kx + 3, ky - 2, kx + 4, ky + 3, 0xFFFFFFFF);
+		pickHits.add(new HitBox(sx - 2, sy - 2, sx + SV_W + 2, sy + SV_H + 2, () -> {
+			pickDrag = 1;
+			dragPick(lastMouseX, lastMouseY);
+		}, null));
+
+		// Farbton-Leiste
+		int hx = sx + SV_W + 6;
+		for (int j = 0; j < SV_H; j++) g.fill(hx, sy + j, hx + 12, sy + j + 1, 0xFF000000 | Option.Color.hsv(j / (float) SV_H, 1f, 1f));
+		int hy = sy + Math.round(pickH * (SV_H - 1));
+		g.fill(hx - 2, hy - 1, hx + 14, hy + 2, 0xFFFFFFFF);
+		g.fill(hx, hy, hx + 12, hy + 1, 0xFF000000 | Option.Color.hsv(pickH, 1f, 1f));
+		pickHits.add(new HitBox(hx - 2, sy - 2, hx + 14, sy + SV_H + 2, () -> {
+			pickDrag = 2;
+			dragPick(lastMouseX, lastMouseY);
+		}, null));
+
+		// rechte Spalte: Vorschau alt/neu, Hex-Feld, Schnellauswahl
+		int rx = hx + 20, rw = x2 - 8 - rx;
+		int cur = picking.value();
+		Ui.round(g, rx, sy, rx + rw, sy + 16, 0xFFFFFFFF);
+		g.fill(rx + 1, sy + 1, rx + rw / 2, sy + 15, 0xFF000000 | pickOriginal);
+		g.fill(rx + rw / 2, sy + 1, rx + rw - 1, sy + 15, 0xFF000000 | cur);
+		Ui.text(g, font, "§7old", rx + 3, sy + 18, 0.65f, 0xFFFFFFFF, false);
+		Ui.text(g, font, "§7new", rx + rw - 3 - font.width("new") * 0.65f, sy + 18, 0.65f, 0xFFFFFFFF, false);
+
+		int fy = sy + 26;
+		Ui.round(g, rx, fy, rx + rw, fy + 14, hexFocused ? acc : 0xFF2A2A36);
+		Ui.round(g, rx + 1, fy + 1, rx + rw - 1, fy + 13, 0xFF0E0E13);
+		String hexShown = "§8#§f" + hexInput + (hexFocused && (System.currentTimeMillis() / 500) % 2 == 0 ? "_" : "");
+		g.text(font, hexShown, rx + 4, fy + 3, 0xFFFFFFFF, false);
+		pickHits.add(new HitBox(rx, fy, rx + rw, fy + 14, () -> {
+			hexFocused = true;
+			hexInput = "";
+		}, null));
+
+		int cols = 4, cell = Math.max(8, (rw - (cols - 1) * 2) / cols);
+		int gy = fy + 18;
+		for (int i = 0; i < Option.Color.PALETTE.size(); i++) {
+			int col = Option.Color.PALETTE.get(i);
+			int cx = rx + (i % cols) * (cell + 2), cyy = gy + (i / cols) * (cell + 2);
+			boolean sel = col == cur;
+			boolean hov = Ui.inside(mx, my, cx, cyy, cx + cell, cyy + cell);
+			if (sel || hov) g.fill(cx - 1, cyy - 1, cx + cell + 1, cyy + cell + 1, sel ? 0xFFFFFFFF : 0x90FFFFFF);
+			g.fill(cx, cyy, cx + cell, cyy + cell, 0xFF000000 | col);
+			pickHits.add(new HitBox(cx, cyy, cx + cell, cyy + cell, () -> {
+				hexFocused = false;
+				applyPick(col, true);
+				click();
+			}, null));
+		}
+
+		// Buttons
+		int by = y2 - 22;
+		pickButton(g, mx, my, x2 - 60, by, x2 - 8, by + 15, "Done", acc, () -> closePicker(true));
+		pickButton(g, mx, my, x2 - 116, by, x2 - 64, by + 15, "Cancel", 0xFF3A3A48, () -> closePicker(false));
+		if (picking.defaultValue != null) {
+			int def = picking.defaultValue;
+			pickButton(g, mx, my, x1 + 8, by, x1 + 64, by + 15, "Default", 0xFF3A3A48, () -> {
+				hexFocused = false;
+				applyPick(def, true);
+			});
+		}
+		g.text(font, "§8" + Option.Color.hex(cur), x1 + 70, by + 4, 0xFFFFFFFF, false);
+	}
+
+	private void pickButton(GuiGraphicsExtractor g, int mx, int my, int x1, int y1, int x2, int y2, String text, int color, Runnable action) {
+		boolean hover = Ui.inside(mx, my, x1, y1, x2, y2);
+		Ui.round(g, x1, y1, x2, y2, hover ? Ui.mix(color, 0xFFFFFFFF, 0.2f) : color);
+		g.text(font, "§f" + text, (x1 + x2) / 2 - font.width(text) / 2, (y1 + y2) / 2 - 4, 0xFFFFFFFF, true);
+		pickHits.add(new HitBox(x1, y1, x2, y2, () -> {
+			click();
+			action.run();
+		}, null));
+	}
+
+	private void dragPick(double mx, double my) {
+		int sx = pickX1() + 8, sy = pickY1() + 22;
+		if (pickDrag == 1) {
+			pickS = (float) Math.max(0, Math.min(1, (mx - sx) / (SV_W - 1)));
+			pickV = 1 - (float) Math.max(0, Math.min(1, (my - sy) / (SV_H - 1)));
+		} else if (pickDrag == 2) {
+			pickH = (float) Math.max(0, Math.min(0.999, (my - sy) / (SV_H - 1)));
+		} else {
+			return;
+		}
+		hexFocused = false;
+		applyPick(Option.Color.hsv(pickH, pickS, pickV), false);
+	}
+
+	private boolean pickerClick(double mx, double my, boolean right) {
+		for (int i = pickHits.size() - 1; i >= 0; i--) {
+			HitBox h = pickHits.get(i);
+			if (mx >= h.x1() && mx < h.x2() && my >= h.y1() && my < h.y2()) {
+				if (!right && h.left() != null) h.left().run();
+				return true;
+			}
+		}
+		boolean inside = Ui.inside(mx, my, pickX1(), pickY1(), pickX1() + PICK_W, pickY1() + PICK_H);
+		if (!inside) closePicker(!right); // Klick daneben = übernehmen, Rechtsklick daneben = abbrechen
+		else hexFocused = false;
+		return true;
 	}
 
 	// ============================================================ Helfer
@@ -436,7 +617,7 @@ public class KsScreen extends Screen {
 		}, null));
 	}
 
-	private double lastMouseX;
+	private double lastMouseX, lastMouseY;
 
 	private double mouseX() {
 		return lastMouseX;
@@ -469,7 +650,9 @@ public class KsScreen extends Screen {
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
 		double mx = toLocalX(event.x()), my = toLocalY(event.y());
 		lastMouseX = mx;
+		lastMouseY = my;
 		boolean right = event.button() == 1;
+		if (picking != null) return pickerClick(mx, my, right);
 		searchFocused = Ui.inside(mx, my, px2() - 138, py1() + 9, px2() - 8, py1() + 25);
 		for (int i = hits.size() - 1; i >= 0; i--) {
 			HitBox h = hits.get(i);
@@ -492,6 +675,11 @@ public class KsScreen extends Screen {
 	@Override
 	public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
 		lastMouseX = toLocalX(event.x());
+		lastMouseY = toLocalY(event.y());
+		if (picking != null) {
+			dragPick(lastMouseX, lastMouseY);
+			return true;
+		}
 		if (dragging != null) {
 			dragging.setFraction((toLocalX(event.x()) - dragX1) / (double) (dragX2 - dragX1));
 			return true;
@@ -501,6 +689,11 @@ public class KsScreen extends Screen {
 
 	@Override
 	public boolean mouseReleased(MouseButtonEvent event) {
+		if (pickDrag != 0) {
+			pickDrag = 0;
+			KaisersSlayers.config().save();
+			return true;
+		}
 		if (dragging != null) {
 			dragging = null;
 			KaisersSlayers.config().save();
@@ -511,6 +704,12 @@ public class KsScreen extends Screen {
 
 	@Override
 	public boolean mouseScrolled(double x, double y, double h, double v) {
+		if (picking != null) {
+			// Mausrad im Farbwähler = Farbton drehen
+			pickH = (float) (((pickH - v * 0.02) % 1 + 1) % 1);
+			applyPick(Option.Color.hsv(pickH, pickS, pickV), false);
+			return true;
+		}
 		if (toLocalX(x) < px1() + SIDEBAR_W) sideScroll -= v * 16;
 		else scrollTarget -= v * 24;
 		return true;
@@ -518,6 +717,29 @@ public class KsScreen extends Screen {
 
 	@Override
 	public boolean keyPressed(KeyEvent event) {
+		if (picking != null) {
+			int key = event.key();
+			if (hexFocused && key == 259) {
+				if (!hexInput.isEmpty()) hexInput = hexInput.substring(0, hexInput.length() - 1);
+				return true;
+			}
+			if (key == 257 || key == 335) { // Enter
+				if (hexFocused) {
+					int rgb = Option.Color.parseHex(hexInput);
+					hexFocused = false;
+					if (rgb >= 0) applyPick(rgb, true);
+					else hexInput = Option.Color.hex(picking.value()).substring(1);
+				} else {
+					closePicker(true);
+				}
+				return true;
+			}
+			if (key == 256) { // Escape = abbrechen
+				closePicker(false);
+				return true;
+			}
+			return true;
+		}
 		if (searchFocused) {
 			int key = event.key();
 			if (key == 259) { // Backspace
@@ -540,6 +762,16 @@ public class KsScreen extends Screen {
 
 	@Override
 	public boolean charTyped(CharacterEvent event) {
+		if (picking != null) {
+			if (hexFocused && hexInput.length() < 6) {
+				String c = event.codepointAsString();
+				if (c.matches("[0-9a-fA-F]")) {
+					hexInput += c.toUpperCase(java.util.Locale.ROOT);
+					if (hexInput.length() == 6) applyPick(Option.Color.parseHex(hexInput), true);
+				}
+			}
+			return true;
+		}
 		if (searchFocused && event.isAllowedChatCharacter() && search.length() < 30) {
 			search += event.codepointAsString();
 			scrollTarget = 0;
@@ -561,6 +793,10 @@ public class KsScreen extends Screen {
 
 	@Override
 	public void onClose() {
+		if (picking != null) {
+			closePicker(true);
+			return;
+		}
 		KaisersSlayers.config().save();
 		super.onClose();
 	}

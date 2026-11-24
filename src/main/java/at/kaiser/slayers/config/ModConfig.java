@@ -40,6 +40,9 @@ public class ModConfig {
 		}
 	}
 
+	/** Config-Version für Migrationen (2 = v2.1) */
+	public int configVersion = 0;
+
 	// ================= Tracker =================
 	public boolean killMessage = true;
 	public boolean questTimeMessage = true;
@@ -68,6 +71,8 @@ public class ModConfig {
 	public boolean minibossWaypoint = true;
 	public int waypointSeconds = 15;
 	public boolean failAlert = true;
+	/** Bei Quest Failed eine klickbare "Call Maddox"-Nachricht im Chat */
+	public boolean callMaddoxMessage = true;
 	public boolean dropAlert = true;
 	public boolean bossTimeWarning = true;
 	public int bossTimeLimitSec = 180;
@@ -82,6 +87,11 @@ public class ModConfig {
 	public boolean otherBossGlow = false;
 	public int otherBossColor = 0x888888;
 	public int dropGlowSeconds = 20;
+	/** Linie vom Spieler zum Miniboss */
+	public boolean minibossTracer = true;
+	public int minibossTracerColor = 0x55FFFF;
+	/** Während des eigenen Bosses: Waypoints/Strahlen/Linien/Highlights fremder Bosse & Minibosse ausblenden */
+	public boolean hideOthersDuringBoss = true;
 
 	// ================= HUD =================
 	public HudPos slayerHud = new HudPos(0.005f, 0.06f);
@@ -92,6 +102,8 @@ public class ModConfig {
 	public int bossPanelOffsetY = 24;
 	/** Akzentfarbe der Oberfläche (RGB) */
 	public int accentColor = 0xE74C3C;
+	/** Profit-Tracker mit Buttons im Inventar / in Kisten anzeigen */
+	public boolean inventoryTracker = true;
 
 	// ================= Gambling =================
 	public boolean gamblingEnabled = true;
@@ -156,6 +168,7 @@ public class ModConfig {
 			KaisersSlayers.LOGGER.warn("Konnte Config nicht laden, nutze Standardwerte", e);
 		}
 		ModConfig c = new ModConfig();
+		c.configVersion = 2;
 		c.fixNulls();
 		c.save();
 		return c;
@@ -173,6 +186,20 @@ public class ModConfig {
 		if (gamblingTrigger == null) gamblingTrigger = "ALWAYS";
 		if (profitMode == null) profitMode = "SESSION";
 		if (costMultiplier <= 0) costMultiplier = 1.0;
+		migrate();
+	}
+
+	/** Alte Configs an neue Standardwerte anpassen. */
+	void migrate() {
+		if (configVersion < 2) {
+			// v2.1: Drops am Boden (Spoiler) und Phasen-Farbe (überschreibt die eigene Glow-Farbe) jetzt standardmäßig aus
+			for (Map<String, Boolean> m : slayerFeatures.values()) {
+				if (m == null) continue;
+				m.remove(SlayerFeature.DROP_GLOW.key());
+				m.remove(SlayerFeature.ENDERMAN_PHASE_COLOR.key());
+			}
+			configVersion = 2;
+		}
 	}
 
 	public void save() {

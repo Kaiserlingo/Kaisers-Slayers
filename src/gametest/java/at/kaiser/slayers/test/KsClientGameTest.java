@@ -8,11 +8,13 @@ import at.kaiser.slayers.hud.AlertOverlay;
 import at.kaiser.slayers.slayer.SlayerType;
 import at.kaiser.slayers.world.BossState;
 import at.kaiser.slayers.world.Highlights;
+import at.kaiser.slayers.world.Tracers;
 import at.kaiser.slayers.world.WorldBeams;
 import at.kaiser.slayers.world.WorldScanner;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
+import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.world.entity.Entity;
 
 import java.util.List;
@@ -29,19 +31,22 @@ public class KsClientGameTest implements FabricClientGameTest {
 			sp.getServer().runCommand("time set day");
 			sp.getServer().runCommand("gamerule doDaylightCycle false");
 			sp.getServer().runCommand("execute as @p at @s run summon zombie ^ ^ ^5 {NoAI:1b,PersistenceRequired:1b}");
+			sp.getServer().runCommand("execute as @p at @s run summon husk ^-5 ^ ^9 {NoAI:1b,PersistenceRequired:1b}");
 			ctx.waitTicks(20);
 
 			// Demo-Daten, Strahl, Glow und Nametag am Zombie
 			ctx.runOnClient(mc -> {
 				KaisersSlayers.toggleForceHud();
-				Entity zombie = null;
+				Entity zombie = null, husk = null;
 				for (Entity e : mc.level.entitiesForRendering()) {
 					if (WorldScanner.typeId(e).equals("zombie")) zombie = e;
+					if (WorldScanner.typeId(e).equals("husk")) husk = e;
 				}
+				if (husk != null) Tracers.set(List.of(new Tracers.Tracer(husk.getId(), 0x55FFFF)));
 				if (zombie != null) {
 					BossState st = KaisersSlayers.scanner().state();
 					st.entityId = zombie.getId();
-					Highlights.set(Map.of(zombie.getId(), 0xAA00FF));
+					Highlights.set(husk != null ? Map.of(zombie.getId(), 0xAA00FF, husk.getId(), 0x5555FF) : Map.of(zombie.getId(), 0xAA00FF));
 					WorldBeams.set(List.of(new WorldBeams.Beam((int) zombie.getX() + 3, (int) zombie.getY(), (int) zombie.getZ() + 2, 0x55FFFF)));
 				}
 				AlertOverlay.show("§c§lBOSS SPAWNED!", "§5Voidgloom Seraph IV", 60_000);
@@ -62,9 +67,21 @@ public class KsClientGameTest implements FabricClientGameTest {
 				ctx.waitTicks(5);
 				ctx.takeScreenshot(names[i]);
 			}
+			// Farbwähler (Welt & Highlights → erste Farbe)
+			ctx.runOnClient(mc -> {
+				KsScreen ks = (KsScreen) mc.gui.screen();
+				ks.selectCategory(2);
+				ks.openPickerForTest(0);
+			});
+			ctx.waitTicks(5);
+			ctx.takeScreenshot("07b_color_picker");
 			ctx.setScreen(() -> new HudEditorScreen(null));
 			ctx.waitTicks(5);
 			ctx.takeScreenshot("08_hud_editor");
+			// Profit-Tracker mit Buttons im Inventar
+			ctx.runOnClient(mc -> mc.gui.setScreen(new InventoryScreen(mc.player)));
+			ctx.waitTicks(5);
+			ctx.takeScreenshot("08b_inventory_tracker");
 			ctx.setScreen(() -> null);
 			ctx.waitTicks(5);
 
@@ -78,7 +95,9 @@ public class KsClientGameTest implements FabricClientGameTest {
 				clock.set(start + 2400);
 				ctx.waitTicks(3);
 				ctx.takeScreenshot("09_gamble_" + style.toLowerCase() + "_spin");
-				clock.set(start + KaisersSlayers.config().gamblingDurationMs + 1200);
+				clock.set(start + KaisersSlayers.config().gamblingDurationMs + 50);
+				ctx.waitTicks(2); // Stufe wechselt zu REVEAL (Startzeit = jetzt)
+				clock.set(start + KaisersSlayers.config().gamblingDurationMs + 1450);
 				ctx.waitTicks(3);
 				ctx.takeScreenshot("10_gamble_" + style.toLowerCase() + "_reveal");
 				ctx.runOnClient(mc -> GamblingAnimation.skip());

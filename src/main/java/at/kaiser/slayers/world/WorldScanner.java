@@ -83,6 +83,7 @@ public final class WorldScanner {
 		Highlights.clear();
 		Waypoints.clear();
 		WorldBeams.clear();
+		Tracers.clear();
 	}
 
 	public void scan(Minecraft mc, SlayerTracker tracker, ModConfig cfg, long now) {
@@ -98,6 +99,7 @@ public final class WorldScanner {
 			if (state.found) resetBossTracking();
 			Highlights.clear();
 			WorldBeams.clear();
+			Tracers.clear();
 			return;
 		}
 
@@ -118,15 +120,19 @@ public final class WorldScanner {
 
 		Map<Integer, Integer> glow = new HashMap<>();
 		List<WorldBeams.Beam> beams = new ArrayList<>();
+		List<Tracers.Tracer> tracers = new ArrayList<>();
+		// Während des eigenen Bosses alles von fremden Bossen/Minibossen ausblenden
+		boolean quiet = cfg.hideOthersDuringBoss && phase == SlayerTracker.Phase.BOSS_ALIVE;
 		String[] myNames = {mc.getUser().getName(), player.getName().getString()};
 		state.type = type;
 		state.tier = tracker.tier();
 
 		// ---------- Minibosse ----------
-		if (questActive) scanMinibosses(type, cfg, labels, mobs, player, glow, beams, tracker, now);
+		if (questActive) scanMinibosses(type, cfg, labels, mobs, player, glow, beams, tracers, tracker, now, quiet);
 
 		// ---------- Drops am Boden nach dem Kill ----------
-		if (recentKill && cfg.feature(type, SlayerFeature.DROP_GLOW)) {
+		// (standardmäßig aus und nie während der Gambling-Animation – kein Spoiler)
+		if (recentKill && cfg.feature(type, SlayerFeature.DROP_GLOW) && !at.kaiser.slayers.gambling.GamblingAnimation.isActiveOrPending()) {
 			for (Entity o : other) {
 				if (!(o instanceof ItemEntity)) continue;
 				double dx = o.getX() - lastBossX, dz = o.getZ() - lastBossZ;
@@ -137,7 +143,7 @@ public final class WorldScanner {
 		}
 
 		// ---------- Andere Bosse markieren ----------
-		if (cfg.otherBossGlow) {
+		if (cfg.otherBossGlow && !quiet) {
 			for (Label l : labels) {
 				if (!type.matchesBossName(l.text()) || NameParser.hp(l.text()) < 0) continue;
 				Entity mob = mobBelow(l.entity(), mobs, type.mobId, player);
@@ -150,6 +156,7 @@ public final class WorldScanner {
 			placedBeacons.clear();
 			Highlights.set(glow);
 			WorldBeams.set(beams);
+			Tracers.set(tracers);
 			return;
 		}
 
@@ -182,7 +189,7 @@ public final class WorldScanner {
 			double best = 20 * 20;
 			for (Label l : labels) {
 				if (!type.matchesBossName(l.text())) continue;
-				Label ownerNear = closestLabel(labels, l.entity(), 1.5, 2.5, o -> o.text().contains("Spawned by"));
+				Label ownerNear = closestLabel(labels, l.entity(), 1.5, 2.5, o -> NameParser.isOwnerMarker(o.text()));
 				if (ownerNear != null && !NameParser.isOwnerLabel(ownerNear.text(), myNames)) continue;
 				double d = l.entity().distanceToSqr(player);
 				if (d < best) {
@@ -243,7 +250,7 @@ public final class WorldScanner {
 		double pct = state.hpPercent();
 		if (cfg.feature(type, SlayerFeature.LOW_HP_ALERT) && !lowHpAlerted && pct >= 0 && pct <= 0.10) {
 			lowHpAlerted = true;
-			Feedback.alert("§a§lFAST TOT!", "§7Boss unter 10% HP", 1500, SoundEvents.EXPERIENCE_ORB_PICKUP, 1.6f);
+			Feedback.alert("§a§lALMOST DEAD!", "§7Boss below 10% HP", 1500, SoundEvents.EXPERIENCE_ORB_PICKUP, 1.6f);
 		}
 
 		int bossColor = cfg.glowColor(type);
@@ -273,6 +280,7 @@ public final class WorldScanner {
 		if (boss != null && cfg.feature(type, SlayerFeature.BOSS_GLOW)) glow.put(boss.getId(), bossColor);
 		Highlights.set(glow);
 		WorldBeams.set(beams);
+		Tracers.set(tracers);
 	}
 
 	private void resetBossTracking() {
@@ -291,13 +299,14 @@ public final class WorldScanner {
 	// ======================================================================= Minibosse
 
 	private void scanMinibosses(SlayerType type, ModConfig cfg, List<Label> labels, List<Entity> mobs, LocalPlayer player,
-								Map<Integer, Integer> glow, List<WorldBeams.Beam> beams, SlayerTracker tracker, long now) {
+								Map<Integer, Integer> glow, List<WorldBeams.Beam> beams, List<Tracers.Tracer> tracers,
+								SlayerTracker tracker, long now, boolean quiet) {
 		List<String> minis = type.minibosses();
 		if (minis.isEmpty()) return;
 		Set<Integer> alive = new HashSet<>();
 		for (Label l : labels) {
 			String name = l.text();
-			if (name.contains("Spawned by")) continue;
+			if (NameParser.isOwnerMarker(name)) continue;
 			String mini = null;
 			for (String m : minis) {
 				if (name.contains(m)) {
@@ -309,6 +318,14 @@ public final class WorldScanner {
 			Entity s = l.entity();
 			alive.add(s.getId());
 
+			String key = "mini" + s.getId();
+			if (quiet) {
+				// eigener Boss lebt: fremde Minibosse merken, aber nichts anzeigen und keinen Alert auslösen
+				knownMinis.add(s.getId());
+				Waypoints.remove(key);
+				continue;
+			}
+
 			Entity mob = mobBelow(s, mobs, null, player);
 			if (mob != null && cfg.feature(type, SlayerFeature.MINIBOSS_HIGHLIGHT)) glow.put(mob.getId(), cfg.minibossColor);
 			Entity at = mob != null ? mob : s;
@@ -316,8 +333,10 @@ public final class WorldScanner {
 				beams.add(new WorldBeams.Beam((int) Math.floor(at.getX()), (int) Math.floor(at.getY()), (int) Math.floor(at.getZ()),
 						cfg.minibossBeamColor));
 			}
+			if (cfg.minibossTracer && cfg.feature(type, SlayerFeature.MINIBOSS_TRACER)) {
+				tracers.add(new Tracers.Tracer(at.getId(), cfg.minibossTracerColor));
+			}
 
-			String key = "mini" + s.getId();
 			if (knownMinis.add(s.getId())) {
 				if (s.distanceTo(player) <= 15) {
 					tracker.profit().addMiniboss(type);
@@ -353,7 +372,7 @@ public final class WorldScanner {
 			if (cfg.feature(SlayerType.ZOMBIE, SlayerFeature.ZOMBIE_TNT_GLOW)) glow.put(m.getId(), DANGER_COLOR);
 		}
 		if (count > 0 && state.tntCount == 0 && cfg.feature(SlayerType.ZOMBIE, SlayerFeature.ZOMBIE_TNT_WARNING)) {
-			Feedback.alert("§c§lTNT!", "§7Weg vom TNT!", 1200, SoundEvents.ANVIL_LAND, 1.8f);
+			Feedback.alert("§c§lTNT!", "§7Get away from the TNT!", 1200, SoundEvents.ANVIL_LAND, 1.8f);
 		}
 		state.tntCount = count;
 		state.nearestTnt = nearest;
@@ -368,7 +387,7 @@ public final class WorldScanner {
 			if (speed > 4.0 && now - state.jumpAt > 2000) {
 				state.jumpAt = now;
 				if (cfg.feature(SlayerType.SPIDER, SlayerFeature.SPIDER_JUMP_WARNING)) {
-					Feedback.alert("§4§lSPRUNG!", "§7Broodfather springt", 900, SoundEvents.ANVIL_LAND, 2.0f);
+					Feedback.alert("§4§lLEAP!", "§7Broodfather is leaping", 900, SoundEvents.ANVIL_LAND, 2.0f);
 				}
 			}
 		}
@@ -400,7 +419,7 @@ public final class WorldScanner {
 		}
 		if (pups > 0 && !pupsAlerted && cfg.feature(SlayerType.WOLF, SlayerFeature.WOLF_PUP_ALERT)) {
 			pupsAlerted = true;
-			Feedback.alert("§f§lPUPS!", "§7Boss ist unverwundbar – töte " + pups + " Pups", 1800, SoundEvents.PLAYER_LEVELUP, 0.8f);
+			Feedback.alert("§f§lPUPS!", "§7Boss is invulnerable – kill " + pups + " pups", 1800, SoundEvents.PLAYER_LEVELUP, 0.8f);
 		}
 		state.pupCount = pups;
 	}
@@ -423,7 +442,7 @@ public final class WorldScanner {
 		}
 		if (wasHoldingBeacon && !held) {
 			state.beaconThrownAt = now; // Beacon wurde geworfen → Yang Glyph
-			if (alerts) Feedback.alert("§c§lYANG GLYPH!", "§7Beacon geworfen – gleich zerstören!", 1800, SoundEvents.ANVIL_LAND, 1.2f);
+			if (alerts) Feedback.alert("§c§lYANG GLYPH!", "§7Beacon thrown – break it right away!", 1800, SoundEvents.ANVIL_LAND, 1.2f);
 		}
 		wasHoldingBeacon = held;
 		state.beaconHeld = held;
@@ -480,7 +499,7 @@ public final class WorldScanner {
 				if (!placedBeacons.containsKey(p)) {
 					placedBeacons.put(p, now);
 					if (alerts && now - state.beaconThrownAt > 3000) {
-						Feedback.alert("§c§lBEACON!", "§7Sofort zerstören!", 2000, SoundEvents.ANVIL_LAND, 1.2f);
+						Feedback.alert("§c§lBEACON!", "§7Break it now!", 2000, SoundEvents.ANVIL_LAND, 1.2f);
 					}
 				}
 			}
@@ -527,7 +546,7 @@ public final class WorldScanner {
 				}
 				if (pillar[0] <= 3 && alertedPillars.add(l.entity().getId())
 						&& cfg.feature(SlayerType.BLAZE, SlayerFeature.BLAZE_PILLAR_ALERT)) {
-					Feedback.alert("§5§lPILLAR " + pillar[0] + "s!", "§7Noch " + pillar[1] + " Hits", 1500, SoundEvents.ANVIL_LAND, 1.6f);
+					Feedback.alert("§5§lPILLAR " + pillar[0] + "s!", "§7" + pillar[1] + " hits left", 1500, SoundEvents.ANVIL_LAND, 1.6f);
 				}
 			}
 			if (NameParser.isBlazeDemon(name) && l.entity().distanceTo(center) < 30) {
@@ -542,7 +561,7 @@ public final class WorldScanner {
 
 		boolean immune = "IMMUNE".equals(state.attunement);
 		if (immune && !immuneAlerted && cfg.feature(SlayerType.BLAZE, SlayerFeature.BLAZE_IMMUNE_WARNING)) {
-			Feedback.alert("§c§lIMMUNE!", "§7Boss nimmt gerade keinen Schaden", 1200, SoundEvents.VILLAGER_NO, 1.0f);
+			Feedback.alert("§c§lIMMUNE!", "§7Boss takes no damage right now", 1200, SoundEvents.VILLAGER_NO, 1.0f);
 		}
 		immuneAlerted = immune;
 	}
@@ -554,7 +573,7 @@ public final class WorldScanner {
 		double pct = state.hpPercent();
 		boolean ready = state.steakReady || (pct >= 0 && pct <= 0.20);
 		if (ready && !steakAlerted && cfg.feature(SlayerType.VAMPIRE, SlayerFeature.VAMPIRE_STEAK_ALERT)) {
-			Feedback.alert("§c§lSTAKE!", "§7Jetzt Steak Stake benutzen", 2000, SoundEvents.PLAYER_LEVELUP, 1.8f);
+			Feedback.alert("§c§lSTAKE!", "§7Use your Steak Stake now", 2000, SoundEvents.PLAYER_LEVELUP, 1.8f);
 		}
 		steakAlerted = ready;
 		state.steakReady = ready;
@@ -562,7 +581,7 @@ public final class WorldScanner {
 		if (twinclawsNow && !state.twinclawsVisible) {
 			state.lastTwinclaws = now;
 			if (cfg.feature(SlayerType.VAMPIRE, SlayerFeature.VAMPIRE_TWINCLAWS_ALERT)) {
-				Feedback.alert("§b§lHOLY ICE!", "§7Twinclaws kommt", 1200, SoundEvents.ANVIL_LAND, 1.4f);
+				Feedback.alert("§b§lHOLY ICE!", "§7Twinclaws incoming", 1200, SoundEvents.ANVIL_LAND, 1.4f);
 			}
 		}
 		state.twinclawsVisible = twinclawsNow;
@@ -572,7 +591,7 @@ public final class WorldScanner {
 			BlockState below = mc.level.getBlockState(mc.player.blockPosition().below());
 			state.maniaSafe = below.getBlock().getDescriptionId().contains("green_terracotta");
 			if (!maniaAlerted && cfg.feature(SlayerType.VAMPIRE, SlayerFeature.VAMPIRE_MANIA_ALERT)) {
-				Feedback.alert("§c§lMANIA!", "§7Auf grünen Boden stellen", 1500, SoundEvents.ANVIL_LAND, 1.0f);
+				Feedback.alert("§c§lMANIA!", "§7Stand on green terracotta", 1500, SoundEvents.ANVIL_LAND, 1.0f);
 			}
 		}
 		maniaAlerted = maniaNow;

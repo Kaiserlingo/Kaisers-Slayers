@@ -56,7 +56,7 @@ public final class BossNametag {
 				}
 				if (st.laserLeftMs(now) >= 0) return "§c§lLASER " + TextUtil.formatSeconds(st.laserLeftMs(now));
 				if (st.hits > 0) return "§d§lHITS " + st.hits;
-				if (st.beaconHeld) return "§cBeacon in der Hand";
+				if (st.beaconHeld) return "§cHolding Beacon";
 				return "§aDAMAGE";
 			}
 			case BLAZE -> {
@@ -67,7 +67,7 @@ public final class BossNametag {
 			}
 			case VAMPIRE -> {
 				if (st.steakReady) return "§c§lSTAKE!";
-				if (st.mania) return st.maniaSafe ? "§a§lMANIA ✔" : "§c§lMANIA – grüner Boden!";
+				if (st.mania) return st.maniaSafe ? "§a§lMANIA ✔" : "§c§lMANIA – green terracotta!";
 				if (st.lastTwinclaws > 0 && st.tier >= 2) {
 					long next = 7000 - ((now - st.lastTwinclaws) % 7000);
 					return "§bHoly Ice " + TextUtil.formatSeconds(next);
@@ -78,12 +78,12 @@ public final class BossNametag {
 				return st.pupCount > 0 ? "§f§lPUPS " + st.pupCount : "";
 			}
 			case SPIDER -> {
-				if (now - st.jumpAt < 1200) return "§4§lSPRUNG!";
+				if (now - st.jumpAt < 1200) return "§4§lLEAP!";
 				if (st.cocoonAt > 0 && now - st.cocoonAt < 10_000) return "§fCOCOON " + TextUtil.formatSeconds(now - st.cocoonAt);
 				return "";
 			}
 			case ZOMBIE -> {
-				if (st.healAt > 0 && now - st.healAt < 3000) return "§a§lHEILT!";
+				if (st.healAt > 0 && now - st.healAt < 3000) return "§a§lHEALING!";
 				return st.tntCount > 0 ? "§c§lTNT x" + st.tntCount : "";
 			}
 		}

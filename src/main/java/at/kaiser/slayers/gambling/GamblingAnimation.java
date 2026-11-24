@@ -180,7 +180,7 @@ public final class GamblingAnimation {
 		duration = Math.max(2000, Math.min(12_000, cfg.gamblingDurationMs));
 
 		strip = buildStrip(pool, result, STRIP, TARGET, RANDOM);
-		jitter = (RANDOM.nextDouble() - 0.5) * 0.7;
+		jitter = (RANDOM.nextDouble() - 0.5) * 0.4; // Gewinner landet nahe am Zeiger, aber nicht immer exakt mittig
 		slots = new ArrayList<>();
 		for (int c = 0; c < 3; c++) {
 			LootPool.Entry target = onlyCommon && c != 1 ? randomOther(pool, result, RANDOM) : result;
@@ -296,6 +296,16 @@ public final class GamblingAnimation {
 
 	// ================================================================ Zeichnen
 
+	/** Oberkante des Inhalts (unter der Kopfzeile) */
+	private static float contentTop(int sh) {
+		return sh * 0.04f + 28;
+	}
+
+	/** Senkrechte Mitte des Inhaltsbereichs zwischen Kopfzeile und Hinweiszeile – alle Stile + Ergebnis nutzen sie */
+	static float centerY(int sh) {
+		return (contentTop(sh) + (sh - 20)) / 2f;
+	}
+
 	public static void render(GuiGraphicsExtractor g, DeltaTracker delta) {
 		if (stage == Stage.IDLE) return;
 		Minecraft mc = Minecraft.getInstance();
@@ -334,7 +344,7 @@ public final class GamblingAnimation {
 		float rayAngle = (now % 20_000) / 20_000f * (float) (Math.PI * 2);
 		int rayColor = stage == Stage.REVEAL && !onlyCommon ? rarity : 0xFF000000 | accent;
 		int rayAlpha = (int) ((stage == Stage.REVEAL ? (jackpot ? 34 : 22) : 9) * alpha);
-		rays(g, sw / 2f, sh * 0.55f, Math.max(sw, sh), rayAngle, Ui.argb(rayColor, rayAlpha), stage == Stage.REVEAL ? 14 : 10);
+		rays(g, sw / 2f, centerY(sh), Math.max(sw, sh), rayAngle, Ui.argb(rayColor, rayAlpha), stage == Stage.REVEAL ? 14 : 10);
 		// Vignette (dunkle Ränder)
 		int vig = (int) (200 * alpha);
 		g.fillGradient(0, 0, sw, sh / 5, Ui.argb(0x000000, vig), 0x00000000);
@@ -352,9 +362,13 @@ public final class GamblingAnimation {
 			shake *= (float) Math.pow(0.02, dt);
 		}
 
+		// Partikel hinter dem Vordergrund (Ergebnis-Text bleibt lesbar)
+		updateParticles(g, dt, sw, sh);
+
 		// Kopfzeile
 		String head = type != null ? type.color + "§l" + type.bossName.toUpperCase(Locale.ROOT) + " " + TextUtil.toRoman(tier) : "";
-		Ui.centered(g, mc.font, "§8KAISER'S SLAYERS · DROP ROULETTE", sw / 2f, sh * 0.04f, 0.75f, Ui.argb(0xFFFFFF, (int) (255 * alpha)), false);
+		Ui.centered(g, mc.font, "§8KAISER'S SLAYERS · DROP ROULETTE" + (preview ? " · PREVIEW" : ""), sw / 2f, sh * 0.04f, 0.75f,
+				Ui.argb(0xFFFFFF, (int) (255 * alpha)), false);
 		Ui.centered(g, mc.font, head, sw / 2f, sh * 0.04f + 9, 1.5f, Ui.argb(0xFFFFFF, (int) (255 * alpha)), true);
 
 		switch (stage) {
@@ -363,28 +377,24 @@ public final class GamblingAnimation {
 				double p = Math.min(1.0, t / (double) duration);
 				renderStyle(g, mc.font, sw, sh, p, t, false);
 			}
-			case REVEAL -> {
-				if (t < 900) renderStyle(g, mc.font, sw, sh, 1.0, duration, true);
-				renderReveal(g, mc.font, sw, sh, t, alpha);
-			}
+			case REVEAL -> renderReveal(g, mc.font, sw, sh, t, alpha);
 			default -> {}
 		}
 		g.pose().popMatrix();
 
-		// Partikel + Blitz
-		updateParticles(g, dt, sw, sh);
+		// Konfetti + Blitz
 		if (jackpot && stage == Stage.REVEAL && cfg.gamblingParticles && RANDOM.nextFloat() < 0.5f) confetti(sw);
 		if (flash > 0.01f) {
 			g.fill(0, 0, sw, sh, Ui.argb(0xFFFFFF, (int) (flash * 220)));
 			flash *= (float) Math.pow(0.004, dt);
 		}
 		if (stage != Stage.REVEAL || t < REVEAL_MS - 600) {
-			Ui.centered(g, mc.font, "§8Taste \"Gambling überspringen\" zum Überspringen", sw / 2f, sh - 14, 0.75f, 0xFFFFFFFF, false);
+			Ui.centered(g, mc.font, "§8Press §7[" + KaisersSlayers.skipKeyName() + "]§8 to skip", sw / 2f, sh - 12, 0.75f, 0xFFFFFFFF, false);
 		}
 	}
 
 	private static void renderSuspense(GuiGraphicsExtractor g, Font font, int sw, int sh, long now, int accent, float alpha) {
-		float cx = sw / 2f, cy = sh * 0.5f;
+		float cx = sw / 2f, cy = centerY(sh) - 16;
 		// drehender Lade-Ring
 		for (int i = 0; i < 12; i++) {
 			double a = i * Math.PI / 6 + now / 180.0;
@@ -392,9 +402,9 @@ public final class GamblingAnimation {
 			int al = (int) (255 * alpha * ((i + 1) / 12f));
 			g.fill((int) px - 2, (int) py - 2, (int) px + 2, (int) py + 2, Ui.argb(accent, al));
 		}
-		Ui.centered(g, font, "§f§lBOSS BESIEGT", cx, cy + 34, 2.0f, Ui.argb(0xFFFFFF, (int) (255 * alpha)), true);
+		Ui.centered(g, font, "§f§lBOSS SLAIN!", cx, cy + 34, 2.0f, Ui.argb(0xFFFFFF, (int) (255 * alpha)), true);
 		String dots = ".".repeat((int) (now / 300 % 4));
-		Ui.centered(g, font, "§7Drops werden ausgewertet" + dots, cx, cy + 56, 1.0f, Ui.argb(0xFFFFFF, (int) (255 * alpha)), true);
+		Ui.centered(g, font, "§7Rolling your drops" + dots, cx, cy + 56, 1.0f, Ui.argb(0xFFFFFF, (int) (255 * alpha)), true);
 	}
 
 	private static void renderStyle(GuiGraphicsExtractor g, Font font, int sw, int sh, double p, long t, boolean settled) {
@@ -410,7 +420,7 @@ public final class GamblingAnimation {
 
 	private static void renderCase(GuiGraphicsExtractor g, Font font, int sw, int sh, double p, boolean settled) {
 		int cardW = 70, cardH = 92, gap = 8, step = cardW + gap;
-		int cx = sw / 2, cy = (int) (sh * 0.53f);
+		int cx = sw / 2, cy = Math.round(centerY(sh));
 		int half = Math.min(sw / 2 - 20, 4 * step);
 		int top = cy - cardH / 2;
 		double pos = (TARGET + jitter) * step * ease(p);
@@ -456,11 +466,13 @@ public final class GamblingAnimation {
 		g.fillGradient(x1 + 1, y1 + 1, x2 - 1, y2 - 1, Ui.argb(color, 0x10), Ui.argb(color, 0x55));
 		g.fill(x1 + 1, y2 - 5, x2 - 1, y2 - 1, color);
 		Ui.icon(g, ItemIcons.of(e.name()), -16, y1 + 8, 2.0f);
-		List<String> lines = wrap(font, e.name(), (int) ((w - 6) / 0.7f), 3);
-		float ly = y1 + 46;
+		List<String> lines = wrap(font, e.name(), (int) ((w - 8) / 0.7f), 3);
+		float lineH = 7f, glyphH = 5f;
+		float areaTop = y1 + 44, areaBottom = y2 - 7;
+		float ly = (areaTop + areaBottom) / 2f - ((lines.size() - 1) * lineH + glyphH) / 2f;
 		for (String l : lines) {
 			Ui.centered(g, font, l, 0, ly, 0.7f, 0xFFFFFFFF, true);
-			ly += font.lineHeight * 0.7f + 1;
+			ly += lineH;
 		}
 		if (fade > 0) g.fill(x1, y1, x2, y2, Ui.argb(0x000000, (int) (Math.min(1f, fade) * 120)));
 		g.pose().popMatrix();
@@ -471,7 +483,7 @@ public final class GamblingAnimation {
 	private static void renderSlots(GuiGraphicsExtractor g, Font font, int sw, int sh, long t, boolean settled) {
 		int colW = 96, cellH = 34, gap = 10;
 		int totalW = colW * 3 + gap * 2;
-		int left = sw / 2 - totalW / 2, cy = (int) (sh * 0.55f), top = cy - cellH * 3 / 2;
+		int left = sw / 2 - totalW / 2, cy = Math.round(centerY(sh)), top = cy - cellH * 3 / 2;
 		double[] stops = {0.55, 0.78, 1.0};
 		int gold = 0xFF000000 | KaisersSlayers.config().gamblingAccent;
 
@@ -498,11 +510,11 @@ public final class GamblingAnimation {
 				int color = LootPool.tierColor(e.tier());
 				g.fill(x + 2, y + 2, x + 4, y + cellH - 2, color);
 				Ui.icon(g, ItemIcons.of(e.name()), x + 7, y + (cellH - 16) / 2f, 1.0f);
-				List<String> lines = wrap(font, e.name(), (int) ((colW - 30) / 0.7f), 2);
-				float ly = y + cellH / 2f - lines.size() * 4f;
+				List<String> lines = wrap(font, e.name(), (int) ((colW - 31) / 0.7f), 2);
+				float ly = y + cellH / 2f - ((lines.size() - 1) * 7f + 5f) / 2f;
 				for (String l : lines) {
 					Ui.text(g, font, l, x + 27, ly, 0.7f, color, true);
-					ly += 8;
+					ly += 7;
 				}
 			}
 			g.fillGradient(x, top, x + colW, top + 14, 0xC0000000, 0x00000000);
@@ -532,8 +544,8 @@ public final class GamblingAnimation {
 	// ---------------------------------------------------------------- WHEEL
 
 	private static void renderWheel(GuiGraphicsExtractor g, Font font, int sw, int sh, double p, boolean settled) {
-		float cx = sw / 2f, cy = sh * 0.57f;
-		float r = Math.min(sh * 0.27f, 110);
+		float r = Math.min(Math.min(sh * 0.27f, (sh - 20 - contentTop(sh)) / 2f - 16), 110);
+		float cx = sw / 2f, cy = centerY(sh) - 4;
 		double total = wheelAngle(wheelTarget, WHEEL_SEGMENTS, 6, jitter);
 		double angle = total * ease(p);
 		double seg = 360.0 / WHEEL_SEGMENTS;
@@ -600,7 +612,7 @@ public final class GamblingAnimation {
 		int cardW = 64, cardH = 90, gap = 12;
 		int totalW = CARD_COUNT * cardW + (CARD_COUNT - 1) * gap;
 		int left = sw / 2 - totalW / 2;
-		float cy = sh * 0.55f;
+		float cy = centerY(sh);
 		// Reihenfolge: außen zuerst, die mittlere Karte (Ergebnis) zuletzt und langsam
 		int[] order = {0, 4, 1, 3, 2};
 		for (int k = 0; k < CARD_COUNT; k++) {
@@ -638,40 +650,53 @@ public final class GamblingAnimation {
 	private static void renderReveal(GuiGraphicsExtractor g, Font font, int sw, int sh, long t, float alpha) {
 		ModConfig cfg = KaisersSlayers.config();
 		int color = LootPool.tierColor(result.tier());
+		int w = 180, h = 132;
+		float cx = sw / 2f, cy = centerY(sh);
+		// Karte muss mit Platz für JACKPOT oben und Hinweis unten in den Bildschirm passen
+		float room = sh - 20 - contentTop(sh) - (jackpot ? 30 : 0) - (onlyCommon ? 16 : 0);
+		float fit = Math.min(1f, Math.min(room / (h + 16f), (sw - 20f) / (w + 16f)));
+		if (jackpot) cy += 12 * fit;
+		if (onlyCommon) cy -= 6 * fit;
 		float pop = t < 250 ? 0.6f + 0.5f * (t / 250f) : (t < 400 ? 1.1f - 0.1f * ((t - 250) / 150f) : 1.0f);
-		float cx = sw / 2f, cy = sh * 0.55f;
 		float pulse = 1f + (float) Math.sin(t / 140.0) * (jackpot ? 0.04f : 0.015f);
+		float scale = fit * pop * pulse;
+		int a = (int) (255 * alpha);
 
 		g.pose().pushMatrix();
 		g.pose().translate(cx, cy);
-		g.pose().scale(pop * pulse, pop * pulse);
-		int w = 150, h = 120;
-		Ui.round(g, -w / 2 - 6, -h / 2 - 6, w / 2 + 6, h / 2 + 6, Ui.argb(color, (int) (0x70 * alpha)));
-		Ui.round(g, -w / 2, -h / 2, w / 2, h / 2, Ui.argb(color, (int) (255 * alpha)));
-		Ui.round(g, -w / 2 + 2, -h / 2 + 2, w / 2 - 2, h / 2 - 2, Ui.argb(0x101018, (int) (245 * alpha)));
-		g.fillGradient(-w / 2 + 2, -h / 2 + 2, w / 2 - 2, h / 2 - 2, Ui.argb(color, (int) (0x10 * alpha)), Ui.argb(color, (int) (0x60 * alpha)));
-		Ui.icon(g, ItemIcons.of(result.name()), -24, -h / 2f + 10, 3.0f);
-		String rarityName = onlyCommon ? "§7KEIN TREFFER" : LootPool.tierName(result.tier());
-		Ui.centered(g, font, rarityName, 0, -h / 2f + 64, 0.9f, Ui.argb(color, (int) (255 * alpha)), true);
+		g.pose().scale(scale, scale);
+		int x1 = -w / 2, y1 = -h / 2, x2 = w / 2, y2 = h / 2;
+		Ui.round(g, x1 - 6, y1 - 6, x2 + 6, y2 + 6, Ui.argb(color, (int) (0x70 * alpha)));
+		Ui.round(g, x1, y1, x2, y2, Ui.argb(color, a));
+		Ui.round(g, x1 + 2, y1 + 2, x2 - 2, y2 - 2, Ui.argb(0x101018, (int) (245 * alpha)));
+		g.fillGradient(x1 + 2, y1 + 2, x2 - 2, y2 - 2, Ui.argb(color, (int) (0x10 * alpha)), Ui.argb(color, (int) (0x60 * alpha)));
+
+		// Icon (48 px) oben mittig, darunter Seltenheit, Name (max. 2 Zeilen) und Wert – alles horizontal zentriert
+		float y = y1 + 10;
+		Ui.icon(g, ItemIcons.of(result.name()), -24, y, 3.0f);
+		y += 48 + 6;
+		String rarityName = onlyCommon ? "§7NO RARE DROP" : LootPool.tierName(result.tier());
+		Ui.centered(g, font, rarityName, 0, y, 0.9f, Ui.argb(color, a), true);
+		y += 11;
 		String name = (resultCount > 1 ? resultCount + "x " : "") + result.name();
-		List<String> lines = wrap(font, name, (int) ((w - 10) / 1.2f), 2);
-		float ly = -h / 2f + 76;
+		List<String> lines = wrap(font, name, (int) ((w - 16) / 1.2f), 2);
 		for (String l : lines) {
-			Ui.centered(g, font, "§f§l" + l, 0, ly, 1.2f, Ui.argb(0xFFFFFF, (int) (255 * alpha)), true);
-			ly += 12;
+			Ui.centered(g, font, "§f§l" + l, 0, y, 1.2f, Ui.argb(0xFFFFFF, a), true);
+			y += 12;
 		}
 		if (cfg.gamblingShowValue && resultValue > 0) {
-			Ui.centered(g, font, "§6⛃ " + TextUtil.formatCoins(resultValue), 0, h / 2f - 12, 1.0f, Ui.argb(0xFFFFFF, (int) (255 * alpha)), true);
+			Ui.centered(g, font, "§6⛃ " + TextUtil.formatCoins(resultValue) + " coins", 0, y2 - 14, 1.0f, Ui.argb(0xFFFFFF, a), true);
 		}
 		g.pose().popMatrix();
 
+		float cardTop = cy - (h / 2f + 6) * scale, cardBottom = cy + (h / 2f + 6) * scale;
 		if (jackpot) {
 			String jp = (t / 150 % 2 == 0 ? "§6§l" : "§e§l") + "★ JACKPOT ★";
-			Ui.centered(g, font, jp, cx, cy - 96, 2.5f + (float) Math.sin(t / 120.0) * 0.15f, Ui.argb(0xFFFFFF, (int) (255 * alpha)), true);
+			float js = (2.2f + (float) Math.sin(t / 120.0) * 0.12f) * fit;
+			Ui.centered(g, font, jp, cx, cardTop - 6 - 9 * js, js, Ui.argb(0xFFFFFF, a), true);
 		} else if (onlyCommon) {
-			Ui.centered(g, font, "§7Nur Common Drops – nächstes Mal!", cx, cy + 78, 1.0f, Ui.argb(0xFFFFFF, (int) (255 * alpha)), true);
+			Ui.centered(g, font, "§7Only common drops – better luck next time!", cx, cardBottom + 6, 1.0f, Ui.argb(0xFFFFFF, a), true);
 		}
-		if (preview) Ui.centered(g, font, "§8(Vorschau)", cx, cy + 92, 0.75f, 0xFFFFFFFF, false);
 	}
 
 	// ---------------------------------------------------------------- Effekte
@@ -688,7 +713,7 @@ public final class GamblingAnimation {
 
 	private static void burst(int count, int color) {
 		Minecraft mc = Minecraft.getInstance();
-		float cx = mc.getWindow().getGuiScaledWidth() / 2f, cy = mc.getWindow().getGuiScaledHeight() * 0.55f;
+		float cx = mc.getWindow().getGuiScaledWidth() / 2f, cy = centerY(mc.getWindow().getGuiScaledHeight());
 		for (int i = 0; i < count; i++) {
 			Particle p = new Particle();
 			double a = RANDOM.nextDouble() * Math.PI * 2;

@@ -62,7 +62,7 @@ public final class SlayerHud {
 					barLabel = String.format(Locale.ROOT, "§f%.0f%% §7%s/%s %s", barPct * 100,
 							TextUtil.formatCoins(t.progress()), TextUtil.formatCoins(t.progressMax()), t.progressUnit());
 				}
-				rows.add("§7Quest läuft seit §f" + TextUtil.formatDuration(now - t.questStart()));
+				rows.add("§7Quest running for §f" + TextUtil.formatDuration(now - t.questStart()));
 			}
 			case BOSS_ALIVE -> {
 				long alive = t.bossSpawnTime() > 0 ? now - t.bossSpawnTime() : -1;
@@ -73,28 +73,28 @@ public final class SlayerHud {
 					barPct = Math.max(0, left / (double) limit);
 					barFrom = left <= cfg.bossTimeWarnSec * 1000L ? Ui.RED : 0xFFFFAA00;
 					barTo = left <= cfg.bossTimeWarnSec * 1000L ? 0xFFFF8080 : 0xFFFFE080;
-					barLabel = "§c§lBOSS §f" + TextUtil.formatDuration(Math.max(0, left)) + " übrig";
+					barLabel = "§c§lBOSS §f" + TextUtil.formatDuration(Math.max(0, left)) + " left";
 				}
-				rows.add(alive >= 0 ? "§7Kampf: §f" + TextUtil.formatSeconds(alive) : "§7Kampf läuft");
+				rows.add(alive >= 0 ? "§7Fight: §f" + TextUtil.formatSeconds(alive) : "§7Fight in progress");
 			}
-			case BOSS_SLAIN -> rows.add("§a§l✔ Boss besiegt");
-			case NONE -> rows.add("§8Kein Slayer-Quest aktiv");
+			case BOSS_SLAIN -> rows.add("§a§l✔ Boss slain");
+			case NONE -> rows.add("§8No Slayer Quest active");
 		}
 
-		rows.add("§7Bosse §f" + s.kills + " §8· §f" + String.format(Locale.ROOT, "%.1f", s.killsPerHour()) + "/h §8· §f"
+		rows.add("§7Bosses §f" + s.kills + " §8· §f" + String.format(Locale.ROOT, "%.1f", s.killsPerHour()) + "/h §8· §f"
 				+ TextUtil.formatDuration(s.activeMs) + (s.fails > 0 ? " §8· §c" + s.fails + "✘" : ""));
 		if (!s.killTimes.isEmpty() || !s.spawnTimes.isEmpty()) {
-			rows.add("§7Ø Spawn §f" + (s.spawnTimes.isEmpty() ? "-" : TextUtil.formatSeconds(SessionStats.average(s.spawnTimes)))
-					+ " §8· §7Ø Kill §f" + (s.killTimes.isEmpty() ? "-" : TextUtil.formatSeconds(SessionStats.average(s.killTimes))));
+			rows.add("§7Avg Spawn §f" + (s.spawnTimes.isEmpty() ? "-" : TextUtil.formatSeconds(SessionStats.average(s.spawnTimes)))
+					+ " §8· §7Avg Kill §f" + (s.killTimes.isEmpty() ? "-" : TextUtil.formatSeconds(SessionStats.average(s.killTimes))));
 		}
-		if (life != null && life.bestKillMs > 0) rows.add("§7Rekord §a" + TextUtil.formatSeconds(life.bestKillMs));
+		if (life != null && life.bestKillMs > 0) rows.add("§7PB §a" + TextUtil.formatSeconds(life.bestKillMs));
 		if (cfg.showLevelEta && type != null && life != null && life.level >= 0) {
 			if (life.xpToNextLevel == 0) rows.add("§7" + type.levelName + " Slayer §a§lMAX");
 			else if (life.xpToNextLevel > 0) {
 				int perBoss = Math.max(1, type.xpPerBoss(t.tier()));
 				long bosses = (life.xpToNextLevel + perBoss - 1) / perBoss;
 				long avg = !s.questTimes.isEmpty() ? SessionStats.average(s.questTimes) : (s.kills > 0 ? s.activeMs / s.kills : 0);
-				rows.add("§7LVL " + (life.level + 1) + " §b" + TextUtil.formatCoins(life.xpToNextLevel) + " XP §8(" + bosses + " Bosse"
+				rows.add("§7LVL " + (life.level + 1) + " §b" + TextUtil.formatCoins(life.xpToNextLevel) + " XP §8(" + bosses + " bosses"
 						+ (avg > 0 ? ", ~" + TextUtil.formatDuration(bosses * avg) : "") + ")");
 			}
 		}

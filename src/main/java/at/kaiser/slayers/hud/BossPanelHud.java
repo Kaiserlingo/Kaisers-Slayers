@@ -98,26 +98,26 @@ public final class BossPanelHud {
 		List<String> out = new ArrayList<>();
 		switch (type) {
 			case ZOMBIE -> {
-				if (st.healAt > 0 && now - st.healAt < 3000) out.add("§a§lBOSS HEILT SICH!");
+				if (st.healAt > 0 && now - st.healAt < 3000) out.add("§a§lBOSS IS HEALING!");
 				if (cfg.feature(type, SlayerFeature.ZOMBIE_TNT_WARNING) && st.tntCount > 0) {
 					out.add("§c§lTNT x" + st.tntCount + " §7(" + String.format(Locale.ROOT, "%.1fm", st.nearestTnt) + ")");
 				}
 			}
 			case SPIDER -> {
-				if (cfg.feature(type, SlayerFeature.SPIDER_JUMP_WARNING) && now - st.jumpAt < 1200) out.add("§4§lSPRUNG!");
+				if (cfg.feature(type, SlayerFeature.SPIDER_JUMP_WARNING) && now - st.jumpAt < 1200) out.add("§4§lLEAP!");
 				if (cfg.feature(type, SlayerFeature.SPIDER_BROOD_COUNTER) && st.broodCount > 0) out.add("§7Brood: §f" + st.broodCount);
 				if (st.cocoonAt > 0 && now - st.cocoonAt < 15_000) out.add("§f§lCOCOON §7" + TextUtil.formatSeconds(now - st.cocoonAt));
 			}
 			case WOLF -> {
-				if (cfg.feature(type, SlayerFeature.WOLF_PUP_COUNTER) && st.pupCount > 0) out.add("§f§lPups: " + st.pupCount + " §8(Boss unverwundbar)");
+				if (cfg.feature(type, SlayerFeature.WOLF_PUP_COUNTER) && st.pupCount > 0) out.add("§f§lPups: " + st.pupCount + " §8(boss invulnerable)");
 			}
 			case ENDERMAN -> {
 				if (cfg.feature(type, SlayerFeature.ENDERMAN_BEACON_OVERLAY)) {
 					if (!st.placedBeaconTimes.isEmpty()) {
 						long left = WorldScanner.BEACON_EXPLODE_MS - (now - st.placedBeaconTimes.get(0));
 						out.add("§4§lBEACON! §f" + TextUtil.formatSeconds(Math.max(0, left)) + (st.placedBeaconTimes.size() > 1 ? " §7(x" + st.placedBeaconTimes.size() + ")" : ""));
-					} else if (st.beaconFlying) out.add("§c§lBEACON FLIEGT!");
-					else if (st.beaconHeld) out.add("§cBoss hält Beacon");
+					} else if (st.beaconFlying) out.add("§c§lBEACON THROWN!");
+					else if (st.beaconHeld) out.add("§cBoss holds the beacon");
 				}
 				if (cfg.feature(type, SlayerFeature.ENDERMAN_HITS_DISPLAY) && st.hits > 0) out.add("§d§lHITS: " + st.hits);
 				if (cfg.feature(type, SlayerFeature.ENDERMAN_LASER_TIMER) && st.laserLeftMs(now) >= 0) {
@@ -132,19 +132,19 @@ public final class BossPanelHud {
 						out.add(NameParser.attunementColorCode(st.attunement) + "§l" + st.attunement + " §8→ §f" + NameParser.daggerFor(st.attunement));
 						boolean right = NameParser.holdsRightDagger(st.heldItem, st.attunement);
 						boolean anyDagger = NameParser.holdsRightDagger(st.heldItem, "ASHEN") || NameParser.holdsRightDagger(st.heldItem, "SPIRIT");
-						if (right) out.add("§a✔ Richtiger Dagger");
-						else if (anyDagger) out.add("§c§l✘ FALSCHER DAGGER!");
+						if (right) out.add("§a✔ Right dagger");
+						else if (anyDagger) out.add("§c§l✘ WRONG DAGGER!");
 					}
 				}
 				if (cfg.feature(type, SlayerFeature.BLAZE_PILLAR_TIMER) && st.pillarSec >= 0) {
-					out.add((st.pillarSec <= 3 ? "§c§l" : "§6") + "Pillar: " + st.pillarSec + "s §7· §f" + st.pillarHits + " Hits");
+					out.add((st.pillarSec <= 3 ? "§c§l" : "§6") + "Pillar: " + st.pillarSec + "s §7· §f" + st.pillarHits + " hits");
 				}
 				if (st.demonCount > 0) out.add("§dDemons: §f" + st.demonCount);
 			}
 			case VAMPIRE -> {
-				if (cfg.feature(type, SlayerFeature.VAMPIRE_STEAK_ALERT) && st.steakReady) out.add("§c§lSTAKE BEREIT!");
+				if (cfg.feature(type, SlayerFeature.VAMPIRE_STEAK_ALERT) && st.steakReady) out.add("§c§lSTAKE READY!");
 				if (cfg.feature(type, SlayerFeature.VAMPIRE_MANIA_ALERT) && st.mania) {
-					out.add(st.maniaSafe ? "§a§lMANIA §7– du stehst richtig" : "§c§lMANIA §7– auf grünen Boden!");
+					out.add(st.maniaSafe ? "§a§lMANIA §7– you're safe" : "§c§lMANIA §7– stand on green terracotta!");
 				}
 				if (cfg.feature(type, SlayerFeature.VAMPIRE_TWINCLAWS_TIMER) && tracker.tier() >= 2 && st.lastTwinclaws > 0) {
 					long next = 7000 - ((now - st.lastTwinclaws) % 7000);

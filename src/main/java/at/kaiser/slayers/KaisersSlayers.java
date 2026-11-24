@@ -7,6 +7,7 @@ import at.kaiser.slayers.gambling.GamblingAnimation;
 import at.kaiser.slayers.gui.KsScreen;
 import at.kaiser.slayers.hud.AlertOverlay;
 import at.kaiser.slayers.hud.BossPanelHud;
+import at.kaiser.slayers.hud.InventoryTracker;
 import at.kaiser.slayers.hud.Feedback;
 import at.kaiser.slayers.hud.ProfitHud;
 import at.kaiser.slayers.hud.SlayerHud;
@@ -33,7 +34,9 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
@@ -115,6 +118,7 @@ public class KaisersSlayers implements ClientModInitializer {
 			}
 		}
 		WorldRender.register();
+		InventoryTracker.register();
 
 		// --- Chat ---
 		ClientReceiveMessageEvents.GAME.register((message, overlay) -> {
@@ -170,12 +174,13 @@ public class KaisersSlayers implements ClientModInitializer {
 			config.slayerHud.enabled = on;
 			config.profitHud.enabled = on;
 			config.save();
-			chat("§7HUD: " + (on ? "§aAN" : "§cAUS"));
+			chat("§7HUD: " + (on ? "§aON" : "§cOFF"));
 		}
 		while (skipGamblingKey.consumeClick()) GamblingAnimation.skip();
 
 		long now = System.currentTimeMillis();
 		GamblingAnimation.tick(now);
+		WorldRender.tickTracers(mc);
 		if (mc.player == null || mc.level == null) {
 			if (onSkyBlock) SCANNER.reset();
 			onSkyBlock = false;
@@ -217,7 +222,7 @@ public class KaisersSlayers implements ClientModInitializer {
 		double pct = 100.0 * TRACKER.progress() / TRACKER.progressMax();
 		if (pct >= config.soonSpawnPercent && pct < 100) {
 			soonAlertedQuest = TRACKER.questCounter();
-			Feedback.alert("§e§lBOSS SPAWNT GLEICH!", "§7" + String.format(Locale.ROOT, "%.0f%%", pct) + " Fortschritt", 1500,
+			Feedback.alert("§e§lBOSS SPAWNING SOON!", "§7" + String.format(Locale.ROOT, "%.0f%%", pct) + " quest progress", 1500,
 					SoundEvents.EXPERIENCE_ORB_PICKUP, 0.7f);
 		}
 	}
@@ -233,7 +238,7 @@ public class KaisersSlayers implements ClientModInitializer {
 		if (!bossWarned && left <= config.bossTimeWarnSec * 1000L && left > 0) {
 			bossWarned = true;
 			if (config.bossTimeWarning) {
-				Feedback.alert("§c§lZEIT LÄUFT AB!", "§7Noch " + (left / 1000) + " Sekunden", 2000, SoundEvents.ANVIL_LAND, 1.5f);
+				Feedback.alert("§c§lTIME IS RUNNING OUT!", "§7" + (left / 1000) + " seconds left", 2000, SoundEvents.ANVIL_LAND, 1.5f);
 			}
 		}
 	}
@@ -252,6 +257,21 @@ public class KaisersSlayers implements ClientModInitializer {
 		ModConfig.saveProfit(TRACKER.profit().saved());
 	}
 
+	/** Klickbare Nachricht: öffnet per Klick den Anruf bei Maddox (/call slayer). Der Spieler muss selbst klicken. */
+	public static void sendCallMaddox() {
+		Minecraft mc = Minecraft.getInstance();
+		if (mc.player == null) return;
+		MutableComponent button = Component.literal("§a§l[CALL MADDOX]").withStyle(st -> st
+				.withClickEvent(new ClickEvent.RunCommand("/call slayer"))
+				.withHoverEvent(new HoverEvent.ShowText(Component.literal("§7Click to call §5Maddox the Slayer §7with your Abiphone\n§8Runs /call slayer"))));
+		mc.player.sendSystemMessage(Component.literal("§c[KS] §7Quest failed – start a new one: ").append(button));
+	}
+
+	/** Name der Taste zum Überspringen der Gambling-Animation (z. B. "U") */
+	public static String skipKeyName() {
+		return skipGamblingKey == null ? "U" : skipGamblingKey.getTranslatedKeyMessage().getString();
+	}
+
 	public static void chat(String msg) {
 		Minecraft mc = Minecraft.getInstance();
 		if (mc.player != null) mc.player.sendSystemMessage(Component.literal("§c[KS] " + msg));
@@ -263,10 +283,10 @@ public class KaisersSlayers implements ClientModInitializer {
 		if (mc.player == null || mc.level == null) return;
 		StringBuilder b = new StringBuilder();
 		b.append("Kaiser's Slayers ").append(version()).append(" Debug\n");
-		b.append("Phase: ").append(TRACKER.phase()).append(" Typ: ").append(TRACKER.type()).append(" Tier: ").append(TRACKER.tier()).append('\n');
-		b.append("Boss gefunden: ").append(SCANNER.state().found).append(" (Besitzer bestätigt: ").append(SCANNER.state().confirmedOwner)
+		b.append("Phase: ").append(TRACKER.phase()).append(" Type: ").append(TRACKER.type()).append(" Tier: ").append(TRACKER.tier()).append('\n');
+		b.append("Boss found: ").append(SCANNER.state().found).append(" (owner confirmed: ").append(SCANNER.state().confirmedOwner)
 				.append(") Entity: ").append(SCANNER.state().entityId).append('\n');
-		b.append("Scoreboard: ").append(ScoreboardReader.readLines(mc)).append("\n\nEntities im Umkreis von 25 Blöcken:\n");
+		b.append("Scoreboard: ").append(ScoreboardReader.readLines(mc)).append("\n\nEntities within 25 blocks:\n");
 		int count = 0;
 		for (Entity e : mc.level.entitiesForRendering()) {
 			if (e == mc.player || e.distanceTo(mc.player) > 25) continue;
@@ -275,11 +295,11 @@ public class KaisersSlayers implements ClientModInitializer {
 			if (e instanceof LivingEntity le) {
 				String head = le.getItemBySlot(EquipmentSlot.HEAD).getHoverName().getString();
 				String hand = le.getMainHandItem().getHoverName().getString();
-				if (!le.getItemBySlot(EquipmentSlot.HEAD).isEmpty()) extra += " Kopf=" + head;
-				if (!le.getMainHandItem().isEmpty()) extra += " Hand=" + hand;
+				if (!le.getItemBySlot(EquipmentSlot.HEAD).isEmpty()) extra += " head=" + head;
+				if (!le.getMainHandItem().isEmpty()) extra += " hand=" + hand;
 			}
-			if (e instanceof EnderMan em && em.getCarriedBlock() != null) extra += " trägt=" + em.getCarriedBlock();
-			if (e.getVehicle() != null) extra += " reitet=" + WorldScanner.typeId(e.getVehicle());
+			if (e instanceof EnderMan em && em.getCarriedBlock() != null) extra += " carries=" + em.getCarriedBlock();
+			if (e.getVehicle() != null) extra += " rides=" + WorldScanner.typeId(e.getVehicle());
 			if (label == null && extra.isEmpty() && WorldScanner.typeId(e).equals("armor_stand")) continue;
 			b.append(String.format(Locale.ROOT, "%-14s #%-6d %6.1f %6.1f %6.1f  %s%s%n", WorldScanner.typeId(e), e.getId(),
 					e.getX(), e.getY(), e.getZ(), label == null ? "" : "\"" + label + "\"", extra));
@@ -287,9 +307,9 @@ public class KaisersSlayers implements ClientModInitializer {
 		}
 		try {
 			Files.writeString(ModConfig.debugFile(), b.toString(), StandardCharsets.UTF_8);
-			chat("§aDebug-Datei geschrieben (" + count + " Entities): §fconfig/kaisers_slayers_debug.txt");
+			chat("§aDebug file written (" + count + " entities): §fconfig/kaisers_slayers_debug.txt");
 		} catch (Exception e) {
-			chat("§cKonnte Debug-Datei nicht schreiben: " + e.getMessage());
+			chat("§cCould not write the debug file: " + e.getMessage());
 		}
 	}
 
@@ -333,7 +353,7 @@ public class KaisersSlayers implements ClientModInitializer {
 			if (config.spawnAlert) {
 				Feedback.alert("§c§lBOSS SPAWNED!", type.color + type.bossName + " " + TextUtil.toRoman(tier), 2000, SoundEvents.PLAYER_LEVELUP, 0.6f);
 			}
-			if (config.questTimeMessage && spawnMs > 0) chat("§7Boss gespawnt nach §f" + TextUtil.formatSeconds(spawnMs));
+			if (config.questTimeMessage && spawnMs > 0) chat("§7Boss spawned in §f" + TextUtil.formatSeconds(spawnMs));
 		}
 
 		@Override
@@ -342,18 +362,20 @@ public class KaisersSlayers implements ClientModInitializer {
 			if (!config.feature(type, SlayerFeature.TRACKING)) return;
 			if (config.killMessage) {
 				String time = killMs > 0 ? TextUtil.formatSeconds(killMs) : "?";
-				chat(type.color + type.bossName + " " + TextUtil.toRoman(tier) + " §7getötet in §f" + time
-						+ (newBest ? " §a§lNEUER REKORD!" : "") + " §8(Session: " + TRACKER.session().kills + ")");
+				chat(type.color + type.bossName + " " + TextUtil.toRoman(tier) + " §7slain in §f" + time
+						+ (newBest ? " §a§lNEW PB!" : "") + " §8(Session: " + TRACKER.session().kills + ")");
 			}
 			if (config.questTimeMessage && TRACKER.questStartKnown()) {
-				chat("§7Quest komplett in §f" + TextUtil.formatDuration(System.currentTimeMillis() - TRACKER.questStart()));
+				chat("§7Quest completed in §f" + TextUtil.formatDuration(System.currentTimeMillis() - TRACKER.questStart()));
 			}
 			if (!GamblingAnimation.isActiveOrPending()) Feedback.sound(SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0f);
 		}
 
 		@Override
 		public void onQuestFailed(SlayerType type, int tier) {
-			if (config.failAlert) Feedback.alert("§4§lQUEST FAILED", "§7Slayer-Quest fehlgeschlagen", 2500, SoundEvents.ANVIL_LAND, 0.5f);
+			if (config.failAlert) Feedback.alert("§4§lQUEST FAILED", "§7Your Slayer Quest failed", 2500, SoundEvents.ANVIL_LAND, 0.5f);
+			// Maddox (Abiphone) ist im Rift nicht erreichbar
+			if (config.callMaddoxMessage && type != SlayerType.VAMPIRE) sendCallMaddox();
 		}
 
 		@Override
@@ -374,7 +396,7 @@ public class KaisersSlayers implements ClientModInitializer {
 		public void onCocoon() {
 			SCANNER.state().cocoonAt = System.currentTimeMillis();
 			if (config.feature(SlayerType.SPIDER, SlayerFeature.SPIDER_COCOON_ALERT)) {
-				Feedback.alert("§f§lCOCOONED!", "§7Boss eingesponnen", 1500, SoundEvents.PLAYER_LEVELUP, 1.6f);
+				Feedback.alert("§f§lCOCOONED!", "§7You cocooned your boss", 1500, SoundEvents.PLAYER_LEVELUP, 1.6f);
 			}
 		}
 
