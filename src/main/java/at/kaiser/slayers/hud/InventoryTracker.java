@@ -89,6 +89,11 @@ public final class InventoryTracker {
 		}
 		float scale = cfg.profitHud.scale;
 		float x = Math.round(cfg.profitHud.x * sw), y = Math.round(cfg.profitHud.y * sh);
+		// komplett sichtbar halten (die Karte ist im Inventar durch die Buttons etwas höher)
+		if (!dragging && boxH > 0) {
+			y = Math.max(2, Math.min(y, sh - boxH - 2));
+			x = Math.max(2, Math.min(x, sw - boxW - 2));
+		}
 
 		ProfitTracker.Bucket b = ProfitHud.bucket(type, cfg);
 		ProfitHud.Edit edit = new ProfitHud.Edit((mx - x) / scale, (my - y) / scale, System.currentTimeMillis() < resetArmedUntil);
@@ -113,6 +118,7 @@ public final class InventoryTracker {
 			}
 		};
 
+		g.nextStratum(); // über Slots und Items des Inventars zeichnen
 		g.pose().pushMatrix();
 		g.pose().translate(x, y);
 		g.pose().scale(scale, scale);

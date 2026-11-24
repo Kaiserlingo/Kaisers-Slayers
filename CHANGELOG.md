@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.2.0
+- **Mob Kill Coins** im Profit-Tracker: Coins, die Mobs während des Quests in die Purse geben (Verkäufe, Bank und Menüs werden ignoriert)
+- **Nur eigene Minibosse**: Highlight, Strahl, Tracer und Waypoint nur für Minibosse aus deiner Quest (Zuordnung über die Chat-Meldung „SLAYER MINI-BOSS … HAS SPAWNED!“), abschaltbar
+- **Profit-HUD im Inventar bearbeitbar** statt eigenem Panel: Items anklicken = ausblenden, SESSION/TOTAL-Chip, Instant Sell ↔ Sell Offer, Reset, Karte ziehen = verschieben, Mausrad = Größe
+- **Neues Tracker-Design**: Tabelle mit Anzahl · Item (in Drop-Farbe) · Wert, darunter Quest Cost, Bosses Killed, Profit (volle Zahl), Profit/Hour, Uptime; Breite passt sich an
+- **Aufgeräumtes Menü**: Einstellungen in Abschnitten mit je einer Karte statt vieler einzelner Kästen
+
 ## 2.1.0
 - **Boss-Erkennung repariert**: Hypixel zeigt jetzt „<Name>'s SLAYER BOSS“ statt „Spawned by“ – dein eigener Boss wird wieder sicher erkannt (Timer, Overlays, Glow)
 - **Miniboss-Tracer**: Linie vom Spieler direkt zum Miniboss (Farbe einstellbar, pro Slayer schaltbar)
