@@ -1,0 +1,27 @@
+{
+	"schemaVersion": 1,
+	"id": "kaisers_slayers",
+	"version": "${version}",
+	"name": "Kaiser's Slayers",
+	"description": "Slayer-Begleiter für Hypixel SkyBlock: Menü (/ks), Boss- und Miniboss-Alerts mit Waypoint, slayer-spezifische Overlays (Beacon, Skulls, Dagger, Pillar, Pups, TNT, Steak), Profit-Tracker mit Live-Bazaar-Preisen und Gambling-Animation beim Kill.",
+	"authors": [
+		"Kaiser"
+	],
+	"license": "MIT",
+	"icon": "assets/kaisers_slayers/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"at.kaiser.slayers.KaisersSlayers"
+		]
+	},
+	"depends": {
+		"fabricloader": ">=0.20.1",
+		"minecraft": "~26.2",
+		"java": ">=25",
+		"fabric-api": "*"
+	},
+	"mixins": [
+		"kaisers_slayers.mixins.json"
+	]
+}
