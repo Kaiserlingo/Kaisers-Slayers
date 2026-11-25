@@ -155,6 +155,7 @@ public class KaisersSlayers implements ClientModInitializer {
 		});
 		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> saveAll());
 
+		if (config.checkUpdates) at.kaiser.slayers.update.Updater.check();
 		LOGGER.info("Kaiser's Slayers {} geladen.", version());
 	}
 
@@ -185,6 +186,7 @@ public class KaisersSlayers implements ClientModInitializer {
 
 		long now = System.currentTimeMillis();
 		GamblingAnimation.tick(now);
+		if (mc.player != null && at.kaiser.slayers.update.Updater.shouldAnnounce()) announceUpdate();
 		WorldRender.tickTracers(mc);
 		if (mc.player == null || mc.level == null) {
 			if (onSkyBlock) SCANNER.reset();
@@ -319,6 +321,26 @@ public class KaisersSlayers implements ClientModInitializer {
 	/** Name der Taste zum Überspringen der Gambling-Animation (z. B. "U") */
 	public static String skipKeyName() {
 		return skipGamblingKey == null ? "U" : skipGamblingKey.getTranslatedKeyMessage().getString();
+	}
+
+	/** Chat aus einem Hintergrund-Thread (z. B. Updater) */
+	public static void chatLater(String msg) {
+		Minecraft.getInstance().execute(() -> chat(msg));
+	}
+
+	/** "Update verfügbar" mit klickbarem [UPDATE NOW] (führt /ks update aus) und [Changelog] */
+	public static void announceUpdate() {
+		Minecraft mc = Minecraft.getInstance();
+		var rel = at.kaiser.slayers.update.Updater.latest();
+		if (mc.player == null || rel == null) return;
+		MutableComponent update = Component.literal("§a§l[UPDATE NOW]").withStyle(st -> st
+				.withClickEvent(new ClickEvent.RunCommand("/ks update"))
+				.withHoverEvent(new HoverEvent.ShowText(Component.literal("§7Downloads §fv" + rel.version() + " §7from GitHub and replaces the old version.\n§7Restart Minecraft afterwards."))));
+		MutableComponent log = Component.literal(" §b[Changelog]").withStyle(st -> st
+				.withClickEvent(new ClickEvent.OpenUrl(java.net.URI.create(at.kaiser.slayers.update.Updater.RELEASES_PAGE)))
+				.withHoverEvent(new HoverEvent.ShowText(Component.literal("§7Opens the release page"))));
+		mc.player.sendSystemMessage(Component.literal("§c[KS] §eUpdate available: §fv" + rel.version() + " §8(you have v" + version() + ") ")
+				.append(update).append(log));
 	}
 
 	public static void chat(String msg) {

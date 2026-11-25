@@ -194,8 +194,21 @@ public class KsScreen extends Screen {
 		button(g, mx, my, x2 - 78, y2 - 21, x2 - 8, y2 - 5, "Done", acc, this::onClose);
 		button(g, mx, my, x2 - 168, y2 - 21, x2 - 84, y2 - 5, "HUD Editor", 0xFF3A3A48,
 				() -> minecraft.gui.setScreen(new HudEditorScreen(this)));
-		String hint = "§8Right-click = back · Scroll = scroll";
-		if (Ui.width(font, hint) * 0.7f < (x2 - 172) - (sbx2 + 10)) Ui.text(g, font, hint, sbx2 + 10, y2 - 15, 0.7f, 0xFFFFFFFF, false);
+		var upd = at.kaiser.slayers.update.Updater.state();
+		var rel = at.kaiser.slayers.update.Updater.latest();
+		if ((upd == at.kaiser.slayers.update.Updater.State.AVAILABLE || upd == at.kaiser.slayers.update.Updater.State.FAILED) && rel != null) {
+			// Update mit einem Klick: lädt die neue Version und ersetzt die alte .jar
+			String label = (upd == at.kaiser.slayers.update.Updater.State.FAILED ? "Retry update " : "⬆ Update to v") + rel.version();
+			int bw = Math.min(Ui.width(font, label) + 16, (x2 - 172) - (sbx2 + 10));
+			button(g, mx, my, sbx2 + 10, y2 - 21, sbx2 + 10 + bw, y2 - 5, label, 0xFF2E8B57, at.kaiser.slayers.update.Updater::install);
+		} else if (upd == at.kaiser.slayers.update.Updater.State.DOWNLOADING) {
+			Ui.text(g, font, "§eDownloading update…", sbx2 + 10, y2 - 16, 0.85f, 0xFFFFFFFF, false);
+		} else if (upd == at.kaiser.slayers.update.Updater.State.INSTALLED) {
+			Ui.text(g, font, "§a✔ Update installed – restart Minecraft", sbx2 + 10, y2 - 16, 0.85f, 0xFFFFFFFF, false);
+		} else {
+			String hint = "§8Right-click = back · Scroll = scroll";
+			if (Ui.width(font, hint) * 0.7f < (x2 - 172) - (sbx2 + 10)) Ui.text(g, font, hint, sbx2 + 10, y2 - 15, 0.7f, 0xFFFFFFFF, false);
+		}
 
 		if (picking != null) drawPicker(g, mx, my);
 		g.pose().popMatrix();

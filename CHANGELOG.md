@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.5.0 – erstes öffentliches Release
+- **Updates im Spiel**: Beim Start wird auf GitHub nach einer neuen Version gesucht. Gibt es eine, erscheint im Chat „Update available“ mit **[UPDATE NOW]** – ein Klick lädt die neue Version aus dem offiziellen Release, prüft sie (Prüfsumme, Mod-ID) und ersetzt die alte .jar. Nach einem Neustart ist sie aktiv. Auch über den Button unten im `/ks`-Menü oder `/ks update`.
+- Abschaltbar unter HUD → Check for Updates
+
 ## 2.4.0
 - **Neue Schrift**: Menü und alle HUDs in serifenloser Schrift (Roboto, OFL-Lizenz); abschaltbar unter HUD → Clean Font
 - **Voidgloom**: Beacons (Hand/Wurf/platziert) und Nukekubi-Skulls leuchten in EINER grellen Farbe (Standard Neon-Grün) – Glow plus pulsierender, gefüllter Kasten durch Wände; Farbe im Voidgloom-Menü einstellbar

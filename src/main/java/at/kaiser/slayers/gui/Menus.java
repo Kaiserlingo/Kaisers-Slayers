@@ -169,6 +169,18 @@ public final class Menus {
 		o.add(Option.toggle("Waypoint Arrow", "Arrow + distance to minibosses and Yang Glyph beacons.", () -> c().waypointArrow, v -> c().waypointArrow = v));
 		o.add(Option.slider("Boss Panel Offset", "Distance of the boss info below your crosshair.", 8, 80, 4,
 				() -> (double) c().bossPanelOffsetY, v -> c().bossPanelOffsetY = (int) Math.round(v), v -> (int) v + "px"));
+		o.add(Option.toggle("Check for Updates", "Looks for a new version on GitHub when the game starts and tells you in chat (update with one click).",
+				() -> c().checkUpdates, v -> c().checkUpdates = v));
+		o.add(Option.action("Update", "Checks GitHub now and installs the newest version if there is one.", "Check", () -> {
+			var st = at.kaiser.slayers.update.Updater.state();
+			if (st == at.kaiser.slayers.update.Updater.State.AVAILABLE) at.kaiser.slayers.update.Updater.install();
+			else at.kaiser.slayers.update.Updater.check().thenRun(() -> {
+				if (at.kaiser.slayers.update.Updater.state() == at.kaiser.slayers.update.Updater.State.UP_TO_DATE)
+					KaisersSlayers.chatLater("§aYou have the latest version (v" + KaisersSlayers.version() + ").");
+				else if (at.kaiser.slayers.update.Updater.state() == at.kaiser.slayers.update.Updater.State.AVAILABLE)
+					net.minecraft.client.Minecraft.getInstance().execute(KaisersSlayers::announceUpdate);
+			});
+		}));
 		o.add(Option.toggle("Clean Font", "Modern sans-serif font (Roboto) in menus and HUDs instead of the Minecraft pixel font.",
 				() -> c().sansFont, v -> c().sansFont = v));
 		o.add(Option.color("Menu Accent Color", "Highlight color of this menu and the HUDs.", () -> c().accentColor, v -> c().accentColor = v, 0xE74C3C));

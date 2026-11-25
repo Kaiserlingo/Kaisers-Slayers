@@ -11,6 +11,7 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 
 /** Befehle: /ks (Menü) und ein paar Abkürzungen. /kslayers geht auch. */
@@ -43,6 +44,27 @@ public final class SlayerCommands {
 					cfg.profitMode = "TOTAL".equals(cfg.profitMode) ? "SESSION" : "TOTAL";
 					cfg.save();
 					return ok(ctx, "§7Profit tracker: §f" + ("TOTAL".equals(cfg.profitMode) ? "Total" : "Session"));
+				}))
+				.then(ClientCommands.literal("update").executes(ctx -> {
+					switch (at.kaiser.slayers.update.Updater.state()) {
+						case AVAILABLE, FAILED -> {
+							if (at.kaiser.slayers.update.Updater.latest() != null) at.kaiser.slayers.update.Updater.install();
+							else at.kaiser.slayers.update.Updater.check();
+						}
+						case DOWNLOADING -> ok(ctx, "§7Update is already downloading…");
+						case INSTALLED -> ok(ctx, "§aUpdate installed – restart Minecraft.");
+						default -> {
+							ok(ctx, "§7Checking for updates…");
+							at.kaiser.slayers.update.Updater.check().thenRun(() -> {
+								var st = at.kaiser.slayers.update.Updater.state();
+								if (st == at.kaiser.slayers.update.Updater.State.AVAILABLE) Minecraft.getInstance().execute(KaisersSlayers::announceUpdate);
+								else if (st == at.kaiser.slayers.update.Updater.State.UP_TO_DATE)
+									KaisersSlayers.chatLater("§aYou have the latest version (v" + KaisersSlayers.version() + ").");
+								else KaisersSlayers.chatLater("§cCould not reach GitHub to check for updates.");
+							});
+						}
+					}
+					return 1;
 				}))
 				.then(ClientCommands.literal("prices").executes(ctx -> {
 					KaisersSlayers.prices().refresh();
@@ -79,6 +101,7 @@ public final class SlayerCommands {
 				"§e/ks reset §7– reset the session",
 				"§e/ks gamble <case|slots|wheel|cards> §7– test the animation",
 				"§e/ks prices §7– refresh Bazaar prices",
+				"§e/ks update §7– check for updates / install the newest version",
 				"§e/ks carry add <player> <amount> [price] §7– add a carry client (e.g. 10 carries, 2.5m each)",
 				"§e/ks carry §7– list clients · §e+ / - / set / paid / price / remove / clearfinished",
 				"§e/ks debug §7– debug file for bug reports",

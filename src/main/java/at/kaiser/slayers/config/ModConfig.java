@@ -115,6 +115,8 @@ public class ModConfig {
 	public int accentColor = 0xE74C3C;
 	/** Serifenlose Schrift (Roboto) in Menü und HUDs statt der Minecraft-Pixelschrift */
 	public boolean sansFont = true;
+	/** Beim Start auf GitHub nach neuen Versionen suchen */
+	public boolean checkUpdates = true;
 	/** Profit-Tracker mit Buttons im Inventar / in Kisten anzeigen */
 	public boolean inventoryTracker = true;
 

@@ -38,6 +38,12 @@ jobs:
             build/libs/*.jar
             !build/libs/*-sources.jar
 
+      - name: Release-Notizen (nur der neueste Abschnitt aus CHANGELOG.md)
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          awk '/^## /{n++} n==1' CHANGELOG.md > release_notes.md
+          printf '\n---\n**Installation:** `.jar` unten herunterladen und in den `mods`-Ordner legen (Fabric Loader + Fabric API für Minecraft 26.2 nötig). Ab jetzt meldet sich die Mod im Spiel, wenn es ein Update gibt – ein Klick auf **[UPDATE NOW]** installiert es.\n' >> release_notes.md
+
       - name: Release erstellen (nur bei Tags wie v1.2.0)
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
@@ -45,4 +51,5 @@ jobs:
           files: |
             build/libs/*.jar
             !build/libs/*-sources.jar
-          body_path: CHANGELOG.md
+          body_path: release_notes.md
+          name: "Kaiser's Slayers ${{ github.ref_name }}"

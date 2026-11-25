@@ -1,5 +1,7 @@
 # Kaiser's Slayers
 
+**Download:** [Neueste Version (Releases)](https://github.com/Kaiserlingo/Kaisers-Slayers/releases/latest) – `.jar` in den `mods`-Ordner legen (Fabric Loader + Fabric API für Minecraft 26.2). Updates kommen danach mit einem Klick im Spiel.
+
 Slayer-Mod für **Hypixel SkyBlock** · Minecraft **26.2** · **Fabric** · Sprache im Spiel: **Englisch** (SkyBlock-Begriffe)
 
 ## Menü: `/ks`
@@ -46,7 +48,7 @@ Für Carry-Verkäufer: `/ks carry add <Spieler> <Anzahl> [Preis]` fügt einen Ku
 Die Mod zeigt nur Informationen an. Sie klickt, bewegt und automatisiert nichts.
 
 ## Bauen & Installieren
-Jeder Push baut automatisch (GitHub → **Actions** → Artifacts). Tag `v2.1.0` pushen → Release mit `.jar`.
+Jeder Push baut automatisch (GitHub → **Actions** → Artifacts). Tag (z. B. `v2.5.0`) pushen → Release mit `.jar`.
 Installieren: Fabric Loader 26.2 + **Fabric API** + `kaisers-slayers-2.0.0.jar` in den `mods`-Ordner.
 
 Der **Visual Test** (Actions) startet das echte Spiel, lädt eine Welt und macht Screenshots von HUD, Menü, Strahlen, Boss-Timer und allen Gambling-Animationen.
