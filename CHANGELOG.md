@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.4.0
+- **Neue Schrift**: Menü und alle HUDs in serifenloser Schrift (Roboto, OFL-Lizenz); abschaltbar unter HUD → Clean Font
+- **Voidgloom**: Beacons (Hand/Wurf/platziert) und Nukekubi-Skulls leuchten in EINER grellen Farbe (Standard Neon-Grün) – Glow plus pulsierender, gefüllter Kasten durch Wände; Farbe im Voidgloom-Menü einstellbar
+- **Mehrere Drops**: Gambling nimmt immer den wertvollsten Drop; Drops, die erst während des Drehens im Chat kommen, werden noch übernommen; Wartezeit vor dem Drehen 2,2 s
+- **Profit Tracker erkennt viel mehr Items**: Drops, die ohne Chat-Nachricht ins Inventar gehen (Derelict Ashe, Null Sphere, Blaze Rod …), werden gezählt; Menüs/Kisten werden ignoriert, Chat-Drops nicht doppelt gezählt; zweite Lowest-BIN-Quelle
+- **Magic Find** (und Pet Luck) wird aus Itemnamen entfernt; „x2“-Mengen werden erkannt
+- **Session-Auto-Reset**: nach 15 min ohne Slayer startet automatisch eine neue Session (einstellbar, 0 = aus)
+- **Profit-Tracker-Design** wie im Referenzbild: gelber Titel, Anzahl · Item in echter Seltenheits-Farbe · Wert-Spalte, frisch gedroppte Items kurz grün, darunter Spawn Costs, Bosses killed, Profit, Profit/h, Uptime
+
 ## 2.3.0
 - **Carry-Tracker** für Carry-Verkäufer:
   - `/ks carry add <Spieler> <Anzahl> [Preis pro Carry]` (z. B. `/ks carry add Technoblade 10 2.5m`), dazu `+`, `-`, `set`, `price`, `paid`, `remove`, `clearfinished`, `clear`, `list`
