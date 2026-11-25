@@ -48,6 +48,7 @@ Diese Datei erklärt, wo was liegt und wie man neue Funktionen hinzufügt.
 3. Optional: eigene Features + `case` in `WorldScanner`/`BossPanelHud`.
 
 ## Bauen & Release
+- **Neue Version veröffentlichen:** `mod_version` in `gradle.properties` erhöhen, oben in `CHANGELOG.md` einen Abschnitt `## <Version>` schreiben und auf `main` pushen. GitHub Actions baut, testet und legt automatisch das Release `v<Version>` mit der `.jar` an. Alle Spieler bekommen danach im Spiel „Update available“ mit **[UPDATE NOW]** (`update/Updater.java`).
 
 - Jeder Push baut automatisch (GitHub → **Actions**). Die `.jar` liegt beim Build unter **Artifacts**.
 - **Release:** Version in `gradle.properties` erhöhen, `CHANGELOG.md` ergänzen, dann ein Tag pushen (z. B. `v1.2.0`). Daraus wird automatisch ein GitHub-Release mit der `.jar` erstellt.
