@@ -61,6 +61,10 @@ public class ModConfig {
 	public boolean profitCountSacks = true;
 	/** Coins von Mob-Kills (Purse-Zuwachs während des Quests) mitzählen */
 	public boolean profitMobCoins = true;
+	/** Drops zählen, die ohne Chat-Nachricht direkt ins Inventar kommen */
+	public boolean profitCountPickups = true;
+	/** Session nach so vielen Minuten ohne Slayer automatisch neu starten (0 = aus) */
+	public int profitSessionTimeoutMin = 15;
 	public boolean profitShowIcons = true;
 	/** Kosten-Faktor (z. B. 0.5 bei Aatrox "Slashed Pricing") */
 	public double costMultiplier = 1.0;
@@ -97,6 +101,8 @@ public class ModConfig {
 	public int minibossTracerColor = 0x55FFFF;
 	/** Während des eigenen Bosses: Waypoints/Strahlen/Linien/Highlights fremder Bosse & Minibosse ausblenden */
 	public boolean hideOthersDuringBoss = true;
+	/** Grelle Farbe für Voidgloom-Beacons und Nukekubi-Skulls (Glow + leuchtender Kasten) */
+	public int voidgloomColor = 0x39FF14;
 
 	// ================= HUD =================
 	public HudPos slayerHud = new HudPos(0.005f, 0.06f);
@@ -107,6 +113,8 @@ public class ModConfig {
 	public int bossPanelOffsetY = 24;
 	/** Akzentfarbe der Oberfläche (RGB) */
 	public int accentColor = 0xE74C3C;
+	/** Serifenlose Schrift (Roboto) in Menü und HUDs statt der Minecraft-Pixelschrift */
+	public boolean sansFont = true;
 	/** Profit-Tracker mit Buttons im Inventar / in Kisten anzeigen */
 	public boolean inventoryTracker = true;
 

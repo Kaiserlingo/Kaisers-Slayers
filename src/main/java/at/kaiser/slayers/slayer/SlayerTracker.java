@@ -26,6 +26,9 @@ public class SlayerTracker {
 		void onRareDrop(String rarity, String item, int count, boolean big);
 		/** Hypixel meldet "SLAYER MINI-BOSS ... HAS SPAWNED!" */
 		default void onMinibossMessage(String message) {}
+
+		/** Session wurde nach langer Pause automatisch neu gestartet */
+		default void onSessionAutoReset(long idleMs) {}
 		/** Spider T5: "YOU COCOONED YOUR SLAYER BOSS" */
 		default void onCocoon() {}
 		default void onLevelUp(SlayerType type, int level) {}
@@ -44,7 +47,10 @@ public class SlayerTracker {
 	static final Pattern RNG_METER = Pattern.compile("^RNG Meter - ([\\d,]+) Stored XP$");
 	static final Pattern DROP = Pattern.compile(
 			"^(RARE DROP|VERY RARE DROP|CRAZY RARE DROP|INSANE DROP|PRAY TO RNGESUS DROP|EXTRAORDINARILY RARE DROP)!\\s+(.+)$");
-	static final Pattern MAGIC_FIND = Pattern.compile("\\s*\\(\\+[\\d,.]+%? ?✯? ?Magic Find\\)\\s*$");
+	/** "(+187% ✯ Magic Find)", "(+42 ✯ Magic Find)", "(+12% Pet Luck)" … überall im Text entfernen – gehört nicht zum Item */
+	static final Pattern MAGIC_FIND = Pattern.compile("\\s*\\([^()]*?(?:Magic Find|Pet Luck)[^()]*\\)", Pattern.CASE_INSENSITIVE);
+	/** "Foul Flesh x2" oder "Foul Flesh (x2)" */
+	static final Pattern COUNT_SUFFIX = Pattern.compile("^(.+?)\\s*\\(?x(\\d+)\\)?$");
 	static final Pattern COUNT_PREFIX = Pattern.compile("^(\\d+)x\\s+(.+)$");
 
 	// --- Scoreboard-Muster ---
@@ -77,6 +83,12 @@ public class SlayerTracker {
 	private SlayerType lastType;
 	private int lastTier;
 	private boolean dirty;
+	private final PickupTracker pickup = new PickupTracker();
+	/** Nach dem Kill landen Drops noch ein paar Sekunden im Inventar */
+	static final long PICKUP_WINDOW_MS = 20_000;
+	/** Session automatisch neu starten, wenn so lange kein Slayer gemacht wurde (0 = nie) */
+	private long sessionTimeoutMs = 0;
+	private long lastActivity;
 	/** Purse für Mob-Kill-Coins: letzter Stand, -1 = unbekannt */
 	private double lastPurse = -1;
 	private long purseBlockedUntil;
@@ -104,6 +116,7 @@ public class SlayerTracker {
 		if (lastTick != 0) {
 			long delta = Math.min(now - lastTick, 5_000);
 			boolean active = phase != Phase.NONE || (lastKillAt != 0 && now - lastKillAt < ACTIVE_GRACE_MS);
+			if (active) lastActivity = now;
 			if (active && delta > 0) {
 				session.activeMs += delta;
 				profit.addActiveTime(type(), delta);
@@ -295,8 +308,7 @@ public class SlayerTracker {
 		m = DROP.matcher(msg);
 		if (m.matches() && isSlayerContext(now)) {
 			String rarity = m.group(1);
-			String item = MAGIC_FIND.matcher(m.group(2)).replaceAll("").trim();
-			if (item.startsWith("(") && item.endsWith(")")) item = item.substring(1, item.length() - 1).trim();
+			String item = cleanDropName(m.group(2));
 			if (item.startsWith("Enchanted Book (") && item.endsWith(")")) {
 				item = item.substring("Enchanted Book (".length(), item.length() - 1).trim();
 			}
@@ -305,9 +317,17 @@ public class SlayerTracker {
 			if (c.matches()) {
 				count = Integer.parseInt(c.group(1));
 				item = c.group(2).trim();
+			} else {
+				Matcher sfx = COUNT_SUFFIX.matcher(item);
+				if (sfx.matches()) {
+					count = Integer.parseInt(sfx.group(2));
+					item = sfx.group(1).trim();
+				}
 			}
+			if (item.isEmpty()) return;
 			session.addDrop(item, count);
 			profit.addItem(type != null ? type : lastType, item, count);
+			pickup.expectChatDrop(item, count, now);
 			SlayerType t = type != null ? type : lastType;
 			if (t != null) lifetime.get(t).drops.merge(item, count, Integer::sum);
 			dirty = true;
@@ -317,6 +337,25 @@ public class SlayerTracker {
 			}
 			if (listener != null) listener.onRareDrop(rarity, item, count, big);
 		}
+	}
+
+	/** Itemname aus einer Drop-Nachricht: Magic Find &amp; Co. weg, äußere Klammern weg, Leerzeichen bereinigt */
+	public static String cleanDropName(String raw) {
+		String item = MAGIC_FIND.matcher(raw).replaceAll("").replace('✯', ' ').trim();
+		while (item.startsWith("(") && item.endsWith(")") && closingParen(item) == item.length() - 1) {
+			item = item.substring(1, item.length() - 1).trim();
+		}
+		return item.replaceAll("\\s{2,}", " ").trim();
+	}
+
+	/** Index der Klammer, die die erste "(" schließt, sonst -1 */
+	private static int closingParen(String s) {
+		int depth = 0;
+		for (int i = 0; i < s.length(); i++) {
+			if (s.charAt(i) == '(') depth++;
+			else if (s.charAt(i) == ')' && --depth == 0) return i;
+		}
+		return -1;
 	}
 
 	private boolean isSlayerContext(long now) {
@@ -336,6 +375,13 @@ public class SlayerTracker {
 	}
 
 	private void startQuest(long now, boolean known) {
+		// lange nichts gemacht → neue Session
+		if (sessionTimeoutMs > 0 && lastActivity > 0 && now - lastActivity > sessionTimeoutMs && session.kills + session.fails > 0) {
+			long idle = now - lastActivity;
+			resetSession();
+			if (listener != null) listener.onSessionAutoReset(idle);
+		}
+		lastActivity = now;
 		questCounter++;
 		phase = Phase.GRINDING;
 		questStart = now;
@@ -398,6 +444,27 @@ public class SlayerTracker {
 	}
 
 	/** Items aus einer Sack-Nachricht – zählen nur während eines Quests / kurz nach einem Kill. */
+	public PickupTracker pickup() {
+		return pickup;
+	}
+
+	/** Inventar-Stand (Name → Anzahl): Zuwächse während des Quests = Drops ohne Chat-Nachricht */
+	public void onInventory(java.util.Map<String, Long> snapshot, long now) {
+		boolean counting = phase == Phase.GRINDING || phase == Phase.BOSS_ALIVE || phase == Phase.BOSS_SLAIN
+				|| (lastKillAt != 0 && now - lastKillAt < PICKUP_WINDOW_MS);
+		SlayerType t = type != null ? type : lastType;
+		java.util.Map<String, Long> gained = pickup.update(snapshot, now, counting && t != null);
+		for (var e : gained.entrySet()) {
+			profit.addItem(t, e.getKey(), e.getValue());
+			session.addDrop(e.getKey(), (int) Math.min(Integer.MAX_VALUE, e.getValue()));
+			dirty = true;
+		}
+	}
+
+	public void setSessionTimeoutMinutes(int minutes) {
+		sessionTimeoutMs = Math.max(0, minutes) * 60_000L;
+	}
+
 	public void onSackItems(java.util.Map<String, Long> items, long now) {
 		boolean context = phase != Phase.NONE || (lastKillAt != 0 && now - lastKillAt < SACK_WINDOW_MS);
 		if (!context) return;

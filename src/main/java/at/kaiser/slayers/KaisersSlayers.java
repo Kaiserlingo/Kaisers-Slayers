@@ -217,10 +217,16 @@ public class KaisersSlayers implements ClientModInitializer {
 		if (++tickCounter % 5 != 0) return;
 		onSkyBlock = ScoreboardReader.isOnSkyBlock(mc);
 		// Coins aus Menüs (NPC-/Bazaar-Verkauf, Bank, Trades) nicht als Mob-Kill-Coins zählen
-		if (mc.gui.screen() != null) TRACKER.blockPurse(now + 3000);
+		if (mc.gui.screen() != null) {
+			TRACKER.blockPurse(now + 3000);
+			TRACKER.pickup().block(now + 1500);
+		}
 		List<String> lines = onSkyBlock ? ScoreboardReader.readLines(mc) : null;
 		TRACKER.setCountMobCoins(config.profitMobCoins);
+		TRACKER.setSessionTimeoutMinutes(config.profitSessionTimeoutMin);
 		TRACKER.onScoreboard(lines, now);
+		if (onSkyBlock && config.profitCountPickups) TRACKER.onInventory(inventorySnapshot(mc), now);
+		else TRACKER.pickup().resetBaseline();
 		TRACKER.tick(now);
 		if (onSkyBlock) PRICES.tick(now);
 		checkBossTimer(now);
@@ -228,6 +234,32 @@ public class KaisersSlayers implements ClientModInitializer {
 
 		if (tickCounter % 200 == 0 && TRACKER.consumeDirty()) saveAll();
 		if (CARRIES.consumeDirty()) ModConfig.saveCarries(CARRIES.saved());
+	}
+
+	/** Inventar → Itemname → Anzahl; merkt sich nebenbei die Seltenheits-Farbe der Namen */
+	private static Map<String, Long> inventorySnapshot(Minecraft mc) {
+		Map<String, Long> out = new java.util.HashMap<>();
+		if (mc.player == null) return out;
+		for (net.minecraft.world.item.ItemStack st : mc.player.getInventory().getNonEquipmentItems()) {
+			if (st == null || st.isEmpty()) continue;
+			Component name = st.getHoverName();
+			String n = TextUtil.stripFormatting(name.getString()).trim();
+			if (n.isEmpty()) continue;
+			out.merge(n, (long) st.getCount(), Long::sum);
+			int color = firstColor(name);
+			if (color >= 0) TRACKER.profit().learnColor(n, color);
+		}
+		return out;
+	}
+
+	private static int firstColor(Component c) {
+		for (Component part : c.toFlatList()) {
+			if (part.getString().isBlank()) continue;
+			var col = part.getStyle().getColor();
+			if (col != null) return col.getValue();
+		}
+		var col = c.getStyle().getColor();
+		return col != null ? col.getValue() : -1;
 	}
 
 	/** "Boss spawnt gleich" – einmal pro Quest, wenn der Fortschritt die Schwelle erreicht. */
@@ -452,6 +484,7 @@ public class KaisersSlayers implements ClientModInitializer {
 
 		@Override
 		public void onRareDrop(String rarity, String item, int count, boolean big) {
+			GamblingAnimation.onLateDrop(item, count, SlayerTracker.rarityTier(rarity));
 			if (!big || GamblingAnimation.isActiveOrPending()) return; // kein Spoiler – die Animation zeigt den Drop
 			if (config.dropAlert) {
 				Feedback.alert("§6§l" + rarity + "!", "§f" + (count > 1 ? count + "x " : "") + item, 4000, SoundEvents.PLAYER_LEVELUP, 1.4f);
@@ -463,6 +496,11 @@ public class KaisersSlayers implements ClientModInitializer {
 			String name = message.replaceFirst("^SLAYER MINI-?BOSS\\s*", "").replaceFirst("\\s*HAS SPAWNED!?$", "");
 			minibossAlert(name.isBlank() ? "Miniboss" : name);
 			SCANNER.onOwnMinibossMessage(System.currentTimeMillis());
+		}
+
+		@Override
+		public void onSessionAutoReset(long idleMs) {
+			chat("§7New session started §8(no slayer for " + TextUtil.formatDuration(idleMs) + ")");
 		}
 
 		@Override

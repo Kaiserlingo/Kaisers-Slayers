@@ -38,7 +38,6 @@ import java.util.function.Predicate;
  */
 public final class WorldScanner {
 	private static final int DANGER_COLOR = 0xFF3333;
-	private static final int SKULL_COLOR = 0xFF55FF;
 	public static final long BEACON_EXPLODE_MS = 5000;
 
 	/** Ein Namensschild in der Welt */
@@ -49,6 +48,8 @@ public final class WorldScanner {
 	}
 
 	private final BossState state = new BossState();
+	/** Leucht-Kästen dieses Scans (Voidgloom-Beacons/-Skulls) */
+	private final List<Boxes.Box> boxes = new ArrayList<>();
 	/** Minibosse in der Nähe: Entity-ID des Namensschilds → wann zuerst gesehen */
 	private final Map<Integer, Long> miniFirstSeen = new HashMap<>();
 	/** Minibosse, die zu DEINER Quest gehören (über die Chat-Meldung "SLAYER MINI-BOSS ... HAS SPAWNED!" zugeordnet) */
@@ -117,6 +118,7 @@ public final class WorldScanner {
 		Waypoints.clear();
 		WorldBeams.clear();
 		Tracers.clear();
+		Boxes.clear();
 	}
 
 	public void scan(Minecraft mc, SlayerTracker tracker, ModConfig cfg, long now) {
@@ -133,6 +135,7 @@ public final class WorldScanner {
 			Highlights.clear();
 			WorldBeams.clear();
 			Tracers.clear();
+			Boxes.clear();
 			return;
 		}
 
@@ -154,6 +157,7 @@ public final class WorldScanner {
 		Map<Integer, Integer> glow = new HashMap<>();
 		List<WorldBeams.Beam> beams = new ArrayList<>();
 		List<Tracers.Tracer> tracers = new ArrayList<>();
+		boxes.clear();
 		// Während des eigenen Bosses alles von fremden Bossen/Minibossen ausblenden
 		boolean quiet = cfg.hideOthersDuringBoss && phase == SlayerTracker.Phase.BOSS_ALIVE;
 		String[] myNames = {mc.getUser().getName(), player.getName().getString()};
@@ -190,6 +194,7 @@ public final class WorldScanner {
 			Highlights.set(glow);
 			WorldBeams.set(beams);
 			Tracers.set(tracers);
+			Boxes.set(boxes);
 			return;
 		}
 
@@ -314,6 +319,7 @@ public final class WorldScanner {
 		Highlights.set(glow);
 		WorldBeams.set(beams);
 		Tracers.set(tracers);
+		Boxes.set(boxes);
 	}
 
 	private void resetBossTracking() {
@@ -503,13 +509,19 @@ public final class WorldScanner {
 			if (!(s instanceof LivingEntity le) || s.distanceTo(center) > 25) continue;
 			if (le.getItemBySlot(EquipmentSlot.HEAD).is(Items.BEACON) || le.getMainHandItem().is(Items.BEACON)) {
 				flying = true;
-				if (overlay) glow.put(s.getId(), DANGER_COLOR);
+				if (overlay) {
+					glow.put(s.getId(), cfg.voidgloomColor);
+					boxes.add(Boxes.Box.head(s.getId(), cfg.voidgloomColor));
+				}
 			}
 		}
 		for (Entity o : other) {
 			if (o instanceof FallingBlockEntity fb && isBeacon(fb.getBlockState()) && o.distanceTo(center) < 25) {
 				flying = true;
-				if (overlay) glow.put(o.getId(), DANGER_COLOR);
+				if (overlay) {
+					glow.put(o.getId(), cfg.voidgloomColor);
+					boxes.add(Boxes.Box.head(o.getId(), cfg.voidgloomColor));
+				}
 			}
 		}
 		state.beaconFlying = flying;
@@ -520,7 +532,10 @@ public final class WorldScanner {
 			if (!(s instanceof LivingEntity le) || s.distanceTo(center) > 20) continue;
 			if (le.getItemBySlot(EquipmentSlot.HEAD).is(Items.PLAYER_HEAD)) {
 				skulls++;
-				if (cfg.feature(SlayerType.ENDERMAN, SlayerFeature.ENDERMAN_SKULL_OVERLAY)) glow.put(s.getId(), SKULL_COLOR);
+				if (cfg.feature(SlayerType.ENDERMAN, SlayerFeature.ENDERMAN_SKULL_OVERLAY)) {
+					glow.put(s.getId(), cfg.voidgloomColor);
+					boxes.add(Boxes.Box.head(s.getId(), cfg.voidgloomColor));
+				}
 			}
 		}
 		state.skullCount = skulls;
@@ -567,11 +582,12 @@ public final class WorldScanner {
 			state.placedBeaconTimes.add(e.getValue());
 			if (overlay) {
 				long left = Math.max(0, BEACON_EXPLODE_MS - (now - e.getValue()));
-				Waypoints.put("beacon" + p.asLong(), "Beacon", p.getX() + 0.5, p.getY() + 0.5, p.getZ() + 0.5, DANGER_COLOR, now + 15_000);
+				boxes.add(Boxes.Box.block(p.getX(), p.getY(), p.getZ(), cfg.voidgloomColor));
+				Waypoints.put("beacon" + p.asLong(), "Beacon", p.getX() + 0.5, p.getY() + 0.5, p.getZ() + 0.5, cfg.voidgloomColor, now + 15_000);
 				Waypoints.setLabel("beacon" + p.asLong(), "Beacon §c" + String.format(Locale.ROOT, "%.1fs", left / 1000.0));
 			}
 			if (cfg.beamsEnabled && cfg.feature(SlayerType.ENDERMAN, SlayerFeature.ENDERMAN_BEACON_BEAM)) {
-				beams.add(new WorldBeams.Beam(p.getX(), p.getY(), p.getZ(), DANGER_COLOR));
+				beams.add(new WorldBeams.Beam(p.getX(), p.getY(), p.getZ(), cfg.voidgloomColor));
 			}
 		}
 	}

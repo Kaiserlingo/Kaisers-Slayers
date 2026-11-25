@@ -54,7 +54,7 @@ public final class BossPanelHud {
 			double pct = st.hpPercent();
 			Ui.panel(g, bx - 4, by - 4, bx + bw + 4, by + 22, 0xD0101016, Ui.argb(type.defaultGlow, 0xA0));
 			String name = type.color + "§l" + type.bossName + " " + TextUtil.toRoman(tracker.tier());
-			g.text(mc.font, name, bx, by - 1, 0xFFFFFFFF, true);
+			Ui.draw(g, mc.font, name, bx, by - 1, 0xFFFFFFFF, true);
 			long left = BossNametag.timeLeftMs(st, tracker, cfg, now);
 			if (left >= 0) {
 				String time = (left <= cfg.bossTimeWarnSec * 1000L ? "§c§l" : "§e") + "⏱ " + TextUtil.formatDuration(left);
@@ -75,10 +75,10 @@ public final class BossPanelHud {
 				double dist = Math.sqrt(dx * dx + dz * dz + Math.pow(w.y - mc.player.getY(), 2));
 				String line = "§l" + arrow(dx, dz, mc.player.getYRot()) + " §r§f" + w.label + " §7"
 						+ String.format(Locale.ROOT, dist < 10 ? "%.1fm" : "%.0fm", dist);
-				int lw = mc.font.width(line);
+				int lw = Ui.width(mc.font, line);
 				Ui.round(g, sw / 2 - lw / 2 - 5, y - 3, sw / 2 + lw / 2 + 5, y + mc.font.lineHeight + 2, 0xB0101016);
 				g.fill(sw / 2 - lw / 2 - 5, y - 3, sw / 2 - lw / 2 - 3, y + mc.font.lineHeight + 2, 0xFF000000 | w.color);
-				g.text(mc.font, line, sw / 2 - lw / 2, y, 0xFF000000 | w.color, true);
+				Ui.draw(g, mc.font, line, sw / 2 - lw / 2, y, 0xFF000000 | w.color, true);
 				y += mc.font.lineHeight + 7;
 			}
 		}

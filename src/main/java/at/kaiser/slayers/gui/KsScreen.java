@@ -111,7 +111,7 @@ public class KsScreen extends Screen {
 		Ui.round(g, sx1, sy1, sx2, sy2, searchFocused ? Ui.argb(acc, 0xFF) : 0xFF2A2A36);
 		Ui.round(g, sx1 + 1, sy1 + 1, sx2 - 1, sy2 - 1, 0xFF0E0E13);
 		String shown = search.isEmpty() && !searchFocused ? "§8🔍 Search..." : "§f" + search + (searchFocused && (System.currentTimeMillis() / 500) % 2 == 0 ? "_" : "");
-		g.text(font, shown, sx1 + 5, sy1 + 4, 0xFFFFFFFF, false);
+		Ui.draw(g, font, shown, sx1 + 5, sy1 + 4, 0xFFFFFFFF, false);
 		hits.add(new HitBox(sx1, sy1, sx2, sy2, () -> searchFocused = true, () -> {
 			search = "";
 			searchFocused = true;
@@ -145,7 +145,7 @@ public class KsScreen extends Screen {
 			}
 			Ui.icon(g, c.icon(), x1 + 9, ry1 + 1.5f, 0.75f);
 			String label = c.slayer() != null ? c.slayer().bossName : c.name();
-			g.text(font, (active ? "§f§l" : hover ? "§f" : "§7") + fit(font, label, SIDEBAR_W - 34), x1 + 25, ry1 + 4, 0xFFFFFFFF, false);
+			Ui.draw(g, font, (active ? "§f§l" : hover ? "§f" : "§7") + fit(font, label, SIDEBAR_W - 34), x1 + 25, ry1 + 4, 0xFFFFFFFF, false);
 			final int idx = i;
 			if (ry2 > sideTop && ry1 < sideBottom) hits.add(new HitBox(x1 + 4, Math.max(ry1, sideTop), sbx2 - 4, Math.min(ry2, sideBottom), () -> select(idx), null));
 			cy += SIDE_ROW;
@@ -195,7 +195,7 @@ public class KsScreen extends Screen {
 		button(g, mx, my, x2 - 168, y2 - 21, x2 - 84, y2 - 5, "HUD Editor", 0xFF3A3A48,
 				() -> minecraft.gui.setScreen(new HudEditorScreen(this)));
 		String hint = "§8Right-click = back · Scroll = scroll";
-		if (font.width(hint) * 0.7f < (x2 - 172) - (sbx2 + 10)) Ui.text(g, font, hint, sbx2 + 10, y2 - 15, 0.7f, 0xFFFFFFFF, false);
+		if (Ui.width(font, hint) * 0.7f < (x2 - 172) - (sbx2 + 10)) Ui.text(g, font, hint, sbx2 + 10, y2 - 15, 0.7f, 0xFFFFFFFF, false);
 
 		if (picking != null) drawPicker(g, mx, my);
 		g.pose().popMatrix();
@@ -247,7 +247,7 @@ public class KsScreen extends Screen {
 		int startY = y;
 		int acc = accent();
 		if (opts.isEmpty()) {
-			g.text(font, "§8Nothing found.", x1, y + 4, 0xFFFFFFFF, false);
+			Ui.draw(g, font, "§8Nothing found.", x1, y + 4, 0xFFFFFFFF, false);
 			return 20;
 		}
 		int i = 0;
@@ -278,7 +278,7 @@ public class KsScreen extends Screen {
 					if (!search.isEmpty() && !o.category.isEmpty()) label = label + " §8· " + o.category;
 					int ctrlW = controlWidth(o);
 					int textMax = x2 - x1 - ctrlW - 24;
-					g.text(font, "§f" + fit(font, label, textMax), x1 + 8, ry1 + 5, 0xFFFFFFFF, false);
+					Ui.draw(g, font, "§f" + fit(font, label, textMax), x1 + 8, ry1 + 5, 0xFFFFFFFF, false);
 					String desc = fit(font, o.description, (int) (textMax / 0.7f));
 					Ui.text(g, font, desc, x1 + 8, ry1 + 16, 0.7f, 0xFF8A8A98, false);
 					drawControl(g, o, x2 - 8 - ctrlW, ry1 + ROW_H / 2, ctrlW, mx, my, acc, clipTop, clipBottom);
@@ -298,7 +298,7 @@ public class KsScreen extends Screen {
 			case Option.Choice<?> c -> 104;
 			case Option.Slider sl -> 120;
 			case Option.Color c -> 74;
-			case Option.Action a -> Math.max(56, font.width(a.button) + 16);
+			case Option.Action a -> Math.max(56, Ui.width(font, a.button) + 16);
 			default -> 0;
 		};
 	}
@@ -320,10 +320,10 @@ public class KsScreen extends Screen {
 				Ui.round(g, x, cy - 8, x + w, cy + 8, 0xFF0E0E13);
 				boolean hl = mouseIn && Ui.inside(mx, my, x, cy - 8, x + 16, cy + 8);
 				boolean hr = mouseIn && Ui.inside(mx, my, x + w - 16, cy - 8, x + w, cy + 8);
-				g.text(font, (hl ? "§f" : "§8") + "◀", x + 5, cy - 4, 0xFFFFFFFF, false);
-				g.text(font, (hr ? "§f" : "§8") + "▶", x + w - 11, cy - 4, 0xFFFFFFFF, false);
+				Ui.draw(g, font, (hl ? "§f" : "§8") + "◀", x + 5, cy - 4, 0xFFFFFFFF, false);
+				Ui.draw(g, font, (hr ? "§f" : "§8") + "▶", x + w - 11, cy - 4, 0xFFFFFFFF, false);
 				String v = fit(font, c.text(), w - 34);
-				g.text(font, "§e" + v, x + w / 2 - font.width(v) / 2, cy - 4, 0xFFFFFFFF, false);
+				Ui.draw(g, font, "§e" + v, x + w / 2 - Ui.width(font, v) / 2, cy - 4, 0xFFFFFFFF, false);
 				hits.add(new HitBox(x, cy - 8, x + w / 2, cy + 8, () -> {
 					c.step(-1);
 					changed();
@@ -341,13 +341,13 @@ public class KsScreen extends Screen {
 			}
 			case Option.Slider sl -> {
 				String v = sl.format.apply(sl.get.get());
-				int tw = font.width(v);
+				int tw = Ui.width(font, v);
 				int bx1 = x, bx2 = x + w - tw - 8;
 				Ui.round(g, bx1, cy - 2, bx2, cy + 2, 0xFF0E0E13);
 				int fx = bx1 + (int) ((bx2 - bx1) * Math.max(0, Math.min(1, sl.fraction())));
 				Ui.round(g, bx1, cy - 2, Math.max(bx1 + 2, fx), cy + 2, acc);
 				Ui.round(g, fx - 3, cy - 5, fx + 3, cy + 5, 0xFFFFFFFF);
-				g.text(font, "§f" + v, x + w - tw, cy - 4, 0xFFFFFFFF, false);
+				Ui.draw(g, font, "§f" + v, x + w - tw, cy - 4, 0xFFFFFFFF, false);
 				hits.add(new HitBox(bx1 - 4, cy - 8, bx2 + 4, cy + 8, () -> {
 					dragging = sl;
 					dragX1 = bx1;
@@ -362,7 +362,7 @@ public class KsScreen extends Screen {
 				Ui.round(g, x, cy - 8, x + w, cy + 8, hover ? 0xFF2A2A36 : 0xFF0E0E13);
 				Ui.round(g, x + 3, cy - 5, x + 21, cy + 5, 0xFFFFFFFF);
 				Ui.round(g, x + 4, cy - 4, x + 20, cy + 4, col);
-				g.text(font, (hover ? "§f" : "§7") + Option.Color.hex(c.value()), x + 25, cy - 4, 0xFFFFFFFF, false);
+				Ui.draw(g, font, (hover ? "§f" : "§7") + Option.Color.hex(c.value()), x + 25, cy - 4, 0xFFFFFFFF, false);
 				hits.add(new HitBox(x, cy - 8, x + w, cy + 8, () -> openPicker(c), () -> openPicker(c)));
 			}
 			case Option.Action a -> {
@@ -380,10 +380,10 @@ public class KsScreen extends Screen {
 		SlayerType type = KaisersSlayers.tracker().type() != null ? KaisersSlayers.tracker().type() : SlayerType.ZOMBIE;
 		ProfitTracker.Bucket b = ProfitHud.bucket(type, cfg);
 		List<ProfitHud.Row> rows = ProfitHud.rows(type, b);
-		g.text(font, type.color + type.bossName + " §8· " + ("TOTAL".equals(cfg.profitMode) ? "Total" : "Session"), x1 + 2, y, 0xFFFFFFFF, false);
+		Ui.draw(g, font, type.color + type.bossName + " §8· " + ("TOTAL".equals(cfg.profitMode) ? "Total" : "Session"), x1 + 2, y, 0xFFFFFFFF, false);
 		y += 12;
 		if (rows.isEmpty()) {
-			g.text(font, "§8No drops tracked yet.", x1 + 2, y, 0xFFFFFFFF, false);
+			Ui.draw(g, font, "§8No drops tracked yet.", x1 + 2, y, 0xFFFFFFFF, false);
 			return y + 12;
 		}
 		for (ProfitHud.Row r : rows) {
@@ -391,7 +391,7 @@ public class KsScreen extends Screen {
 			boolean hover = Ui.inside(mx, my, x1, y - 1, x2, y + 11) && my >= clipTop && my < clipBottom;
 			if (hover) Ui.round(g, x1, y - 2, x2, y + 11, 0x20FFFFFF);
 			g.fill(x1 + 3, y + 2, x1 + 6, y + 5, at.kaiser.slayers.gambling.LootPool.tierColor(r.tier()));
-			g.text(font, (hidden ? "§8§m" : "§f") + TextUtil.formatInt(r.count()) + "x " + r.name(), x1 + 10, y, 0xFFFFFFFF, false);
+			Ui.draw(g, font, (hidden ? "§8§m" : "§f") + TextUtil.formatInt(r.count()) + "x " + r.name(), x1 + 10, y, 0xFFFFFFFF, false);
 			Ui.rightText(g, font, hidden ? "§8hidden" : "§6" + TextUtil.formatCoins(r.value()), x2 - 4, y, 0xFFFFFFFF);
 			String name = r.name();
 			hits.add(new HitBox(x1, y - 1, x2, y + 11, () -> {
@@ -402,7 +402,7 @@ public class KsScreen extends Screen {
 		}
 		double profit = b.profit((n, c) -> ProfitHud.value(n, c));
 		y += 4;
-		g.text(font, "§7Cost §c-" + TextUtil.formatCoins(b.cost) + "   §7Profit " + (profit >= 0 ? "§a" : "§c") + TextUtil.formatCoins(profit)
+		Ui.draw(g, font, "§7Cost §c-" + TextUtil.formatCoins(b.cost) + "   §7Profit " + (profit >= 0 ? "§a" : "§c") + TextUtil.formatCoins(profit)
 				+ "   §7/h §6" + TextUtil.formatCoins(b.perHour(profit)), x1 + 2, y, 0xFFFFFFFF, false);
 		y += 14;
 		button(g, mx, my, x1, y, x1 + 110, y + 16, "Reset Total", 0xFF5A2A2A, () -> {
@@ -428,7 +428,7 @@ public class KsScreen extends Screen {
 			Ui.hGradient(g, cx + 1, cy + 1, cx + cw - 1, cy + 3, acc, Ui.argb(acc, 0x00));
 			Ui.icon(g, Ui.slayerIcon(t), cx + 6, cy + 8, 1.5f);
 			LifetimeStats.Entry e = KaisersSlayers.tracker().lifetime().get(t);
-			g.text(font, t.color + "§l" + fit(font, t.bossName, cw - 42), cx + 34, cy + 8, 0xFFFFFFFF, true);
+			Ui.draw(g, font, t.color + "§l" + fit(font, t.bossName, cw - 42), cx + 34, cy + 8, 0xFFFFFFFF, true);
 			String lvl = e.level >= 0 ? "LVL " + e.level : "LVL ?";
 			Ui.text(g, font, "§7" + t.levelName + " Slayer · " + lvl, cx + 34, cy + 19, 0.75f, 0xFFFFFFFF, false);
 			ProfitTracker.Bucket total = KaisersSlayers.tracker().profit().total(t);
@@ -444,7 +444,7 @@ public class KsScreen extends Screen {
 		y += rows * (ch + gap) + 4;
 		ModConfig cfg = KaisersSlayers.config();
 		Ui.round(g, x1, y, x2, y + 30, Ui.CARD);
-		g.text(font, "§f§lSession", x1 + 8, y + 5, 0xFFFFFFFF, false);
+		Ui.draw(g, font, "§f§lSession", x1 + 8, y + 5, 0xFFFFFFFF, false);
 		var s = KaisersSlayers.tracker().session();
 		Ui.text(g, font, "§7Bosses §f" + s.kills + "  §7per hour §f" + String.format(java.util.Locale.ROOT, "%.1f", s.killsPerHour())
 				+ "  §7Time §f" + TextUtil.formatDuration(s.activeMs) + "  §7Gambling " + (cfg.gamblingEnabled ? "§aON" : "§cOFF"), x1 + 8, y + 17, 0.75f, 0xFFFFFFFF, false);
@@ -509,7 +509,7 @@ public class KsScreen extends Screen {
 		g.fill(px1(), py1(), px2(), py2(), 0x99000000);
 		int x1 = pickX1(), y1 = pickY1(), x2 = x1 + PICK_W, y2 = y1 + PICK_H;
 		Ui.panel(g, x1, y1, x2, y2, 0xFA16161E, Ui.argb(acc, 0xC0));
-		g.text(font, "§f§l" + fit(font, picking.label, PICK_W - 16), x1 + 8, y1 + 7, 0xFFFFFFFF, false);
+		Ui.draw(g, font, "§f§l" + fit(font, picking.label, PICK_W - 16), x1 + 8, y1 + 7, 0xFFFFFFFF, false);
 
 		// Farbfeld (Sättigung → rechts, Helligkeit → oben)
 		int sx = x1 + 8, sy = y1 + 22;
@@ -545,13 +545,13 @@ public class KsScreen extends Screen {
 		g.fill(rx + 1, sy + 1, rx + rw / 2, sy + 15, 0xFF000000 | pickOriginal);
 		g.fill(rx + rw / 2, sy + 1, rx + rw - 1, sy + 15, 0xFF000000 | cur);
 		Ui.text(g, font, "§7old", rx + 3, sy + 18, 0.65f, 0xFFFFFFFF, false);
-		Ui.text(g, font, "§7new", rx + rw - 3 - font.width("new") * 0.65f, sy + 18, 0.65f, 0xFFFFFFFF, false);
+		Ui.text(g, font, "§7new", rx + rw - 3 - Ui.width(font, "new") * 0.65f, sy + 18, 0.65f, 0xFFFFFFFF, false);
 
 		int fy = sy + 26;
 		Ui.round(g, rx, fy, rx + rw, fy + 14, hexFocused ? acc : 0xFF2A2A36);
 		Ui.round(g, rx + 1, fy + 1, rx + rw - 1, fy + 13, 0xFF0E0E13);
 		String hexShown = "§8#§f" + hexInput + (hexFocused && (System.currentTimeMillis() / 500) % 2 == 0 ? "_" : "");
-		g.text(font, hexShown, rx + 4, fy + 3, 0xFFFFFFFF, false);
+		Ui.draw(g, font, hexShown, rx + 4, fy + 3, 0xFFFFFFFF, false);
 		pickHits.add(new HitBox(rx, fy, rx + rw, fy + 14, () -> {
 			hexFocused = true;
 			hexInput = "";
@@ -589,7 +589,7 @@ public class KsScreen extends Screen {
 	private void pickButton(GuiGraphicsExtractor g, int mx, int my, int x1, int y1, int x2, int y2, String text, int color, Runnable action) {
 		boolean hover = Ui.inside(mx, my, x1, y1, x2, y2);
 		Ui.round(g, x1, y1, x2, y2, hover ? Ui.mix(color, 0xFFFFFFFF, 0.2f) : color);
-		g.text(font, "§f" + text, (x1 + x2) / 2 - font.width(text) / 2, (y1 + y2) / 2 - 4, 0xFFFFFFFF, true);
+		Ui.draw(g, font, "§f" + text, (x1 + x2) / 2 - Ui.width(font, text) / 2, (y1 + y2) / 2 - 4, 0xFFFFFFFF, true);
 		pickHits.add(new HitBox(x1, y1, x2, y2, () -> {
 			click();
 			action.run();
@@ -629,7 +629,7 @@ public class KsScreen extends Screen {
 	private void button(GuiGraphicsExtractor g, int mx, int my, int x1, int y1, int x2, int y2, String text, int color, Runnable action) {
 		boolean hover = Ui.inside(mx, my, x1, y1, x2, y2);
 		Ui.round(g, x1, y1, x2, y2, hover ? Ui.mix(color, 0xFFFFFFFF, 0.2f) : color);
-		g.text(font, "§f" + text, (x1 + x2) / 2 - font.width(text) / 2, (y1 + y2) / 2 - 4, 0xFFFFFFFF, true);
+		Ui.draw(g, font, "§f" + text, (x1 + x2) / 2 - Ui.width(font, text) / 2, (y1 + y2) / 2 - 4, 0xFFFFFFFF, true);
 		hits.add(new HitBox(x1, y1, x2, y2, () -> {
 			click();
 			action.run();
@@ -657,9 +657,9 @@ public class KsScreen extends Screen {
 
 	private static String fit(Font font, String s, int max) {
 		if (max <= 0) return "";
-		if (font.width(s) <= max) return s;
+		if (Ui.width(font, s) <= max) return s;
 		String t = s;
-		while (t.length() > 1 && font.width(t + "…") > max) t = t.substring(0, t.length() - 1);
+		while (t.length() > 1 && Ui.width(font, t + "…") > max) t = t.substring(0, t.length() - 1);
 		return t + "…";
 	}
 

@@ -135,6 +135,10 @@ public final class Menus {
 				() -> c().inventoryTracker, v -> c().inventoryTracker = v));
 		o.add(Option.choice("Period", "Session = since game start/reset, Total = everything so far.", List.of("SESSION", "TOTAL"),
 				v -> v.equals("TOTAL") ? "Total" : "Session", () -> c().profitMode, v -> c().profitMode = v));
+		o.add(Option.toggle("Count Inventory Drops", "Counts drops that go straight into your inventory without a chat message (Derelict Ashe, Null Sphere, Blaze Rod …). Menus are ignored.",
+				() -> c().profitCountPickups, v -> c().profitCountPickups = v));
+		o.add(Option.slider("Session Auto Reset", "Starts a new session after this long without doing slayer (0 = never).", 0, 120, 5,
+				() -> (double) c().profitSessionTimeoutMin, v -> c().profitSessionTimeoutMin = (int) Math.round(v), v -> v == 0 ? "Off" : (int) v + " min"));
 		o.add(Option.toggle("Count Mob Kill Coins", "Coins mobs add to your purse during the quest (sales, bank and menus are ignored).",
 				() -> c().profitMobCoins, v -> c().profitMobCoins = v));
 		o.add(Option.toggle("Count Sack Drops", "Also count items from [Sacks] messages (e.g. Revenant Flesh).", () -> c().profitCountSacks, v -> c().profitCountSacks = v));
@@ -165,6 +169,8 @@ public final class Menus {
 		o.add(Option.toggle("Waypoint Arrow", "Arrow + distance to minibosses and Yang Glyph beacons.", () -> c().waypointArrow, v -> c().waypointArrow = v));
 		o.add(Option.slider("Boss Panel Offset", "Distance of the boss info below your crosshair.", 8, 80, 4,
 				() -> (double) c().bossPanelOffsetY, v -> c().bossPanelOffsetY = (int) Math.round(v), v -> (int) v + "px"));
+		o.add(Option.toggle("Clean Font", "Modern sans-serif font (Roboto) in menus and HUDs instead of the Minecraft pixel font.",
+				() -> c().sansFont, v -> c().sansFont = v));
 		o.add(Option.color("Menu Accent Color", "Highlight color of this menu and the HUDs.", () -> c().accentColor, v -> c().accentColor = v, 0xE74C3C));
 		return o;
 	}
@@ -251,6 +257,10 @@ public final class Menus {
 			o.add(Option.toggle(f.label, f.description, () -> c().feature(t, f), v -> c().setFeature(t, f, v)));
 		}
 		o.add(Option.header("Look & Test"));
+		if (t == SlayerType.ENDERMAN) {
+			o.add(Option.color("Beacon & Skull Color", "One bright color for Yang Glyph beacons and Nukekubi skulls (glow, box through walls, beam).",
+					() -> c().voidgloomColor, v -> c().voidgloomColor = v, 0x39FF14));
+		}
 		String note = switch (t) {
 			case ENDERMAN -> " (\"Phase Color\" overrides it)";
 			case BLAZE -> " (\"Attunement Color\" overrides it)";

@@ -93,8 +93,8 @@ public final class CarryHud {
 		// Breite: längster Name + Fortschritt
 		int nameW = 0, progW = 0;
 		for (CarryManager.Client c : clients) {
-			nameW = Math.max(nameW, font.width("§l" + c.name) + (live.containsKey(CarryManager.key(c.name)) ? 18 : 0));
-			progW = Math.max(progW, font.width("§l" + c.done + "/" + c.total));
+			nameW = Math.max(nameW, Ui.width(font, "§l" + c.name) + (live.containsKey(CarryManager.key(c.name)) ? 18 : 0));
+			progW = Math.max(progW, Ui.width(font, "§l" + c.done + "/" + c.total));
 		}
 		int textX = PAD + 3 + (heads ? face + 4 : 0);
 		int w = Math.max(WIDTH, textX + nameW + 10 + progW + PAD);
@@ -117,7 +117,7 @@ public final class CarryHud {
 		g.fill(0, 2, 2, h - 2, accent); // Akzent-Streifen links
 
 		// Titel
-		g.text(font, "§l⚔ CARRIES", PAD + 3, 4, accent, true);
+		Ui.draw(g, font, "§l⚔ CARRIES", PAD + 3, 4, accent, true);
 		String sub = left > 0 ? "§f" + left + " §7left" : "§a§lALL DONE";
 		Ui.rightText(g, font, sub, w - PAD, 4, 0xFFFFFFFF);
 
@@ -132,9 +132,9 @@ public final class CarryHud {
 			}
 			if (heads) face(g, c.name, PAD + 3, y + (compact ? 0 : 1), face);
 			String nameCol = c.finished() ? "§a" : "§f";
-			g.text(font, nameCol + "§l" + c.name, textX, y + (compact ? 0 : 1), 0xFFFFFFFF, true);
+			Ui.draw(g, font, nameCol + "§l" + c.name, textX, y + (compact ? 0 : 1), 0xFFFFFFFF, true);
 			if (boss != null) {
-				int nx = textX + font.width("§l" + c.name) + 4;
+				int nx = textX + Ui.width(font, "§l" + c.name) + 4;
 				Ui.text(g, font, "§c●", nx, y + (compact ? 0 : 1), 1f, 0xFFFFFFFF, true);
 			}
 			String prog = c.finished() ? "§a§l✔ " + c.done + "/" + c.total : "§e§l" + c.done + "§7/§f" + c.total;
@@ -199,7 +199,7 @@ public final class CarryHud {
 			g.fill(x, y, x + size, y + size, col);
 			Font font = Minecraft.getInstance().font;
 			String s = name.substring(0, 1).toUpperCase(java.util.Locale.ROOT);
-			g.text(font, s, x + size / 2 - font.width(s) / 2, y + size / 2 - 4, 0xFFFFFFFF, true);
+			Ui.draw(g, font, s, x + size / 2 - Ui.width(font, s) / 2, y + size / 2 - 4, 0xFFFFFFFF, true);
 		}
 	}
 }

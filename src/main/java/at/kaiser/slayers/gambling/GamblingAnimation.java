@@ -32,7 +32,7 @@ public final class GamblingAnimation {
 
 	private enum Stage { IDLE, SUSPENSE, SPIN, REVEAL }
 
-	private static final long SUSPENSE_MS = 1600; // Drops kommen kurz nach dem Kill in den Chat
+	private static final long SUSPENSE_MS = 2200; // Drops kommen kurz nach dem Kill in den Chat
 	private static final long REVEAL_MS = 4200;
 	private static final long FADE_MS = 400;
 	private static final int STRIP = 60, TARGET = 50;
@@ -144,11 +144,12 @@ public final class GamblingAnimation {
 		ModConfig cfg = KaisersSlayers.config();
 		List<LootPool.Entry> pool = pool(type);
 
+		// mehrere Drops: immer der WERTVOLLSTE (bei unbekanntem Preis entscheidet die Seltenheit)
 		SlayerTracker.Drop best = null;
 		double bestValue = -1;
 		for (SlayerTracker.Drop d : drops) {
 			double v = value(d.item(), d.count());
-			if (best == null || d.tier() > best.tier() || (d.tier() == best.tier() && v > bestValue)) {
+			if (best == null || better(v, d.tier(), bestValue, best.tier())) {
 				best = d;
 				bestValue = v;
 			}
@@ -200,6 +201,51 @@ public final class GamblingAnimation {
 		stage = Stage.SPIN;
 		stageStart = now;
 		sound(SoundEvents.NOTE_BLOCK_PLING.value(), 0.6f);
+	}
+
+	/** Ist (v, tier) besser als (bestV, bestTier)? Wert zuerst, Seltenheit nur bei Gleichstand/unbekanntem Preis. */
+	public static boolean better(double v, int tier, double bestV, int bestTier) {
+		if (v > 0 || bestV > 0) {
+			if (v != bestV) return v > bestV;
+		}
+		return tier > bestTier;
+	}
+
+	/**
+	 * Drop kommt erst während des Drehens im Chat an (mehrere Drops kommen nacheinander):
+	 * ist er wertvoller, wird das Ziel der Animation noch rechtzeitig ausgetauscht.
+	 */
+	public static void onLateDrop(String item, int count, int dropTier) {
+		if (stage != Stage.SPIN || preview || result == null) return;
+		double v = value(item, count);
+		double curValue = onlyCommon ? -1 : resultValue;
+		int curTier = onlyCommon ? -1 : result.tier();
+		if (!better(v, dropTier, curValue, curTier)) return;
+		LootPool.Entry e = new LootPool.Entry(item, dropTier);
+		result = e;
+		resultCount = count;
+		resultValue = v;
+		onlyCommon = false;
+		jackpot = result.tier() >= 4 || resultValue >= KaisersSlayers.config().gamblingJackpotValue;
+		if (strip.size() > TARGET) {
+			strip = new ArrayList<>(strip);
+			strip.set(TARGET, e);
+		}
+		List<List<LootPool.Entry>> ns = new ArrayList<>();
+		for (List<LootPool.Entry> col : slots) {
+			List<LootPool.Entry> c = new ArrayList<>(col);
+			if (c.size() > SLOT_TARGET) c.set(SLOT_TARGET, e);
+			ns.add(c);
+		}
+		slots = ns;
+		if (wheel.size() > wheelTarget) {
+			wheel = new ArrayList<>(wheel);
+			wheel.set(wheelTarget, e);
+		}
+		if (cards.size() > CARD_COUNT / 2) {
+			cards = new ArrayList<>(cards);
+			cards.set(CARD_COUNT / 2, e);
+		}
 	}
 
 	private static void onReveal() {
@@ -783,7 +829,7 @@ public final class GamblingAnimation {
 		StringBuilder line = new StringBuilder();
 		for (String word : text.split(" ")) {
 			String test = line.isEmpty() ? word : line + " " + word;
-			if (font.width(test) <= maxW || line.isEmpty()) {
+			if (Ui.width(font, test) <= maxW || line.isEmpty()) {
 				line.setLength(0);
 				line.append(test);
 			} else {
@@ -803,9 +849,9 @@ public final class GamblingAnimation {
 	}
 
 	static String fit(Font font, String text, int maxW) {
-		if (font.width(text) <= maxW) return text;
+		if (Ui.width(font, text) <= maxW) return text;
 		String t = text;
-		while (t.length() > 1 && font.width(t + "…") > maxW) t = t.substring(0, t.length() - 1);
+		while (t.length() > 1 && Ui.width(font, t + "…") > maxW) t = t.substring(0, t.length() - 1);
 		return t + "…";
 	}
 

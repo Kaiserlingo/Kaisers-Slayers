@@ -3,6 +3,9 @@ package at.kaiser.slayers.gui;
 import at.kaiser.slayers.slayer.SlayerType;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.FontDescription;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -23,6 +26,33 @@ public final class Ui {
 	public static final int GOLD = 0xFFFFC234;
 
 	private Ui() {}
+
+	// ---------- Schrift ----------
+	/** Serifenlose Schrift der Mod (Roboto, Fallback auf die Minecraft-Schrift für Symbole) */
+	public static final FontDescription SANS = new FontDescription.Resource(Identifier.fromNamespaceAndPath("kaisers_slayers", "sans"));
+
+	private static boolean sans() {
+		var cfg = at.kaiser.slayers.KaisersSlayers.config();
+		return cfg == null || cfg.sansFont;
+	}
+
+	/** Text als Komponente in der Mod-Schrift (§-Farbcodes funktionieren weiter) */
+	public static Component c(String s) {
+		Component comp = Component.literal(s == null ? "" : s);
+		return sans() ? comp.copy().withStyle(st -> st.withFont(SANS)) : comp;
+	}
+
+	public static void draw(GuiGraphicsExtractor g, Font font, String s, int x, int y, int color, boolean shadow) {
+		g.text(font, c(s), x, y, color, shadow);
+	}
+
+	public static void draw(GuiGraphicsExtractor g, Font font, String s, int x, int y, int color) {
+		g.text(font, c(s), x, y, color, true);
+	}
+
+	public static int width(Font font, String s) {
+		return font.width(c(s));
+	}
 
 	public static int argb(int rgb, int alpha) {
 		return (alpha & 0xFF) << 24 | (rgb & 0xFFFFFF);
@@ -102,16 +132,16 @@ public final class Ui {
 		g.pose().pushMatrix();
 		g.pose().translate(x, y);
 		g.pose().scale(scale, scale);
-		g.text(font, s, 0, 0, color, shadow);
+		g.text(font, c(s), 0, 0, color, shadow);
 		g.pose().popMatrix();
 	}
 
 	public static void centered(GuiGraphicsExtractor g, Font font, String s, float cx, float y, float scale, int color, boolean shadow) {
-		text(g, font, s, cx - font.width(s) * scale / 2f, y, scale, color, shadow);
+		text(g, font, s, cx - width(font, s) * scale / 2f, y, scale, color, shadow);
 	}
 
 	public static void rightText(GuiGraphicsExtractor g, Font font, String s, int rightX, int y, int color) {
-		g.text(font, s, rightX - font.width(s), y, color, true);
+		g.text(font, c(s), rightX - width(font, s), y, color, true);
 	}
 
 	/** Item-Icon mit Skalierung */

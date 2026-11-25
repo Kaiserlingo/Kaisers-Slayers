@@ -54,8 +54,8 @@ public class HudEditorScreen extends Screen {
 		// Hilfe
 		int acc = 0xFF000000 | cfg.accentColor;
 		String help = "§fDrag §7= move   §fScroll §7= size   §fRight-click §7= on/off   §fR §7= reset   §fESC §7= done";
-		float hs = Math.min(1f, (width - 30) / (float) font.width(help));
-		int hw = (int) (font.width(help) * hs);
+		float hs = Math.min(1f, (width - 30) / (float) Ui.width(font, help));
+		int hw = (int) (Ui.width(font, help) * hs);
 		Ui.panel(g, width / 2 - hw / 2 - 8, height - 24, width / 2 + hw / 2 + 8, height - 8, 0xE0111117, Ui.argb(acc, 0x80));
 		Ui.text(g, font, help, width / 2f - hw / 2f, height - 19, hs, 0xFFFFFFFF, false);
 		Ui.centered(g, font, "§l§nHUD EDITOR", width / 2f, 8, 1.5f, acc, true);
@@ -77,8 +77,8 @@ public class HudEditorScreen extends Screen {
 		int c = pos.enabled ? (hover ? 0xFFFFFFFF : 0xA0FFFFFF) : 0xFFE74C3C;
 		g.outline(x - 2, y - 2, x2 - x + 4, y2 - y + 4, c);
 		String label = name + (pos.enabled ? "" : " §c(off)") + " §7" + Math.round(pos.scale * 100) + "%";
-		Ui.round(g, x - 2, y - 13, x - 2 + font.width(label) + 6, y - 2, 0xC0000000);
-		g.text(font, label, x + 1, y - 11, 0xFFFFFFFF, false);
+		Ui.round(g, x - 2, y - 13, x - 2 + Ui.width(font, label) + 6, y - 2, 0xC0000000);
+		Ui.draw(g, font, label, x + 1, y - 11, 0xFFFFFFFF, false);
 		if (!pos.enabled) g.fill(x, y, x2, y2, 0x80300000);
 	}
 

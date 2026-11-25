@@ -26,6 +26,8 @@ public final class PriceService {
 	private static final String BAZAAR_URL = "https://api.hypixel.net/v2/skyblock/bazaar";
 	private static final String ITEMS_URL = "https://api.hypixel.net/v2/resources/skyblock/items";
 	private static final String LOWEST_BIN_URL = "https://moulberry.codes/lowestbin.json";
+	/** zweite Quelle, falls Moulberry nicht erreichbar ist */
+	private static final String LOWEST_BIN_URL_2 = "https://hysky.de/api/auctions/lowestbins";
 	private static final long REFRESH_MS = 5 * 60_000;
 
 	private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
@@ -54,7 +56,8 @@ public final class PriceService {
 				: fetch(ITEMS_URL).thenAccept(this::parseItems);
 		CompletableFuture<Void> bazaar = fetch(BAZAAR_URL).thenAccept(this::parseBazaar);
 		CompletableFuture<Void> bin = fetch(LOWEST_BIN_URL).thenAccept(this::parseLowestBin);
-		return CompletableFuture.allOf(items, bazaar, bin)
+		CompletableFuture<Void> bin2 = fetch(LOWEST_BIN_URL_2).thenAccept(this::parseLowestBin);
+		return CompletableFuture.allOf(items, bazaar, bin, bin2)
 				.whenComplete((v, t) -> refreshing = false);
 	}
 
@@ -101,12 +104,16 @@ public final class PriceService {
 	private void parseLowestBin(JsonObject root) {
 		if (root == null) return;
 		for (Map.Entry<String, JsonElement> e : root.entrySet()) {
-			if (e.getValue().isJsonPrimitive()) lowestBin.put(e.getKey(), e.getValue().getAsDouble());
+			try {
+				if (e.getValue().isJsonPrimitive()) lowestBin.put(e.getKey(), e.getValue().getAsDouble());
+			} catch (Exception ignored) {
+				// unerwartetes Format einer Quelle – überspringen
+			}
 		}
 	}
 
 	private static String normalize(String name) {
-		return name.trim().toLowerCase(Locale.ROOT);
+		return name.replaceAll("§.", "").replace('’', '\'').trim().toLowerCase(Locale.ROOT);
 	}
 
 	/** Itemname aus dem Chat -> SkyBlock-Item-ID */

@@ -55,6 +55,8 @@ public class ProfitTracker {
 	/** Gespeicherter Teil (Gesamt) */
 	public static class Saved {
 		public Map<String, Bucket> slayers = new LinkedHashMap<>();
+		/** Farbe des Itemnamens (Seltenheit), aus dem Inventar gelernt: Name → RGB */
+		public Map<String, Integer> itemColors = new LinkedHashMap<>();
 	}
 
 	// Sack-Nachricht im Hover-Text: "+12 Revenant Flesh (Combat Sack)"
@@ -67,6 +69,7 @@ public class ProfitTracker {
 	public void setSaved(Saved s) {
 		saved = s == null ? new Saved() : s;
 		if (saved.slayers == null) saved.slayers = new LinkedHashMap<>();
+		if (saved.itemColors == null) saved.itemColors = new LinkedHashMap<>();
 	}
 
 	public Saved saved() {
@@ -115,6 +118,18 @@ public class ProfitTracker {
 
 	public void resetSession() {
 		session.clear();
+	}
+
+	/** Seltenheits-Farbe eines Items merken (aus dem Inventar) */
+	public void learnColor(String item, int rgb) {
+		Integer old = saved.itemColors.put(item, rgb & 0xFFFFFF);
+		if (old == null || old != (rgb & 0xFFFFFF)) dirty = true;
+	}
+
+	/** RGB oder -1 */
+	public int colorOf(String item) {
+		Integer c = saved.itemColors.get(item);
+		return c == null ? -1 : c;
 	}
 
 	/** Beispieldaten (nur Session) für die HUD-Vorschau */

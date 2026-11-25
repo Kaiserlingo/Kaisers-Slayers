@@ -44,7 +44,7 @@ public final class AlertOverlay {
 		int alpha = (int) (255 * Math.max(0.1f, fade));
 
 		int cy = sh / 3;
-		int tw = mc.font.width(title);
+		int tw = Ui.width(mc.font, title);
 		int stripH = (int) (mc.font.lineHeight * scale) + 18;
 		g.fill(0, cy - stripH / 2 - 4, sw, cy + stripH / 2 + 8, Ui.argb(0x000000, (int) (0x70 * fade)));
 		Ui.hGradient(g, sw / 2 - 160, cy - stripH / 2 - 4, sw / 2, cy - stripH / 2 - 3, 0x00E74C3C, Ui.argb(0xE74C3C, alpha));

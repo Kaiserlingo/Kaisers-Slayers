@@ -122,12 +122,12 @@ public final class SlayerHud {
 		// ---------- Größe ----------
 		String title = type != null ? "§l" + type.bossName + " " + TextUtil.toRoman(t.tier()) : "§lKaiser's Slayers";
 		String chip = life != null && life.level >= 0 ? "LVL " + life.level : "";
-		int chipW = chip.isEmpty() ? 0 : (int) (font.width(chip) * 0.75f) + 8;
+		int chipW = chip.isEmpty() ? 0 : (int) (Ui.width(font, chip) * 0.75f) + 8;
 		int cellW = 0;
-		for (Cell c : cells) cellW = Math.max(cellW, font.width(c.label() + " ") + font.width(c.value()));
-		int w = Math.max(WIDTH, Math.max(pad * 2 + cellW * 2 + 10, 22 + font.width(title) + 8 + chipW + pad));
-		w = Math.max(w, pad * 2 + font.width(statusL) + 8 + font.width(statusR));
-		for (String e : extra) w = Math.max(w, pad * 2 + (int) (font.width(e) * 0.85f));
+		for (Cell c : cells) cellW = Math.max(cellW, Ui.width(font, c.label() + " ") + Ui.width(font, c.value()));
+		int w = Math.max(WIDTH, Math.max(pad * 2 + cellW * 2 + 10, 22 + Ui.width(font, title) + 8 + chipW + pad));
+		w = Math.max(w, pad * 2 + Ui.width(font, statusL) + 8 + Ui.width(font, statusR));
+		for (String e : extra) w = Math.max(w, pad * 2 + (int) (Ui.width(font, e) * 0.85f));
 		w = Math.min(w, 240);
 		lastWidth = w;
 		int gridRows = (cells.size() + 1) / 2;
@@ -137,7 +137,7 @@ public final class SlayerHud {
 		if (cfg.hudBackground) Ui.panel(g, 0, 0, w, h, 0xD8101015, Ui.argb(accent, 0x70));
 		// Kopf: Icon + Name in Slayer-Farbe, Level-Chip rechts, feine Akzent-Linie darunter
 		Ui.icon(g, Ui.slayerIcon(type), 3, 1, 1.0f);
-		g.text(font, (type != null ? type.color : "§c") + title, 22, 5, 0xFFFFFFFF, true);
+		Ui.draw(g, font, (type != null ? type.color : "§c") + title, 22, 5, 0xFFFFFFFF, true);
 		if (!chip.isEmpty()) {
 			int cx2 = w - pad, cx1 = cx2 - chipW;
 			Ui.round(g, cx1, 4, cx2, 13, Ui.argb(accent, 0x60));
@@ -146,7 +146,7 @@ public final class SlayerHud {
 		Ui.hGradient(g, pad, 17, w - pad, 18, accent, Ui.argb(accent, 0x00));
 
 		int y = 21;
-		g.text(font, statusL, pad, y, 0xFFFFFFFF, true);
+		Ui.draw(g, font, statusL, pad, y, 0xFFFFFFFF, true);
 		if (!statusR.isEmpty()) Ui.rightText(g, font, statusR, w - pad, y, 0xFFFFFFFF);
 		y += 11;
 		if (barPct >= 0) {
@@ -163,7 +163,7 @@ public final class SlayerHud {
 			Cell c = cells.get(i);
 			int cx = i % 2 == 0 ? pad : colX2;
 			int cy = y + (i / 2) * 10;
-			g.text(font, "§7" + c.label(), cx, cy, 0xFFFFFFFF, true);
+			Ui.draw(g, font, "§7" + c.label(), cx, cy, 0xFFFFFFFF, true);
 			int right = i % 2 == 0 ? colX2 - 6 : w - pad;
 			Ui.rightText(g, font, c.value(), right, cy, 0xFFFFFFFF);
 		}
