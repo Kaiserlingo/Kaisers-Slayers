@@ -64,3 +64,27 @@ jar {
 		rename { "${it}_kaisers-slayers" }
 	}
 }
+tasks.register('inspectApi') {
+	notCompatibleWithConfigurationCache("inspect only")
+	doLast {
+		def files = sourceSets.main.compileClasspath.files
+		def cp = files.join(File.pathSeparator)
+		def found = []
+		files.findAll { it.name.endsWith('.jar') }.each { jar ->
+			new java.util.zip.ZipFile(jar).withCloseable { z ->
+				z.entries().each { e ->
+					if (e.name.endsWith('.class') && (e.name ==~ /.*(FontDescription|chat/Style|gui/Font|StringSplitter).*/) && !e.name.contains('lambda')) found << e.name.replace('/', '.').replace('.class', '')
+				}
+			}
+		}
+		println "GIZMO CLASSES: " + found
+		(file('inspect-classes.txt').readLines().findAll { it.trim() } + found).unique().each { c ->
+			def sout = new StringBuilder(), serr = new StringBuilder()
+			def p = ['javap', '-p', '-cp', cp, c].execute()
+			p.waitForProcessOutput(sout, serr)
+			println "===== ${c}"
+			println sout
+			if (serr) println "ERR: ${serr}"
+		}
+	}
+}
