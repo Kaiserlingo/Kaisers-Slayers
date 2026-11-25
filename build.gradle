@@ -73,7 +73,7 @@ tasks.register('inspectApi') {
 		files.findAll { it.name.endsWith('.jar') }.each { jar ->
 			new java.util.zip.ZipFile(jar).withCloseable { z ->
 				z.entries().each { e ->
-					if (e.name.endsWith('.class') && (e.name ==~ /.*(FontDescription|chat/Style|gui/Font|StringSplitter).*/) && !e.name.contains('lambda')) found << e.name.replace('/', '.').replace('.class', '')
+					if (e.name.endsWith('.class') && (e.name ==~ '.*(FontDescription|chat.Style|gui.Font|StringSplitter).*') && !e.name.contains('lambda')) found << e.name.replace('/', '.').replace('.class', '')
 				}
 			}
 		}
