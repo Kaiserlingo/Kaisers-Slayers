@@ -7,6 +7,7 @@ import at.kaiser.slayers.gui.KsScreen;
 import at.kaiser.slayers.hud.AlertOverlay;
 import at.kaiser.slayers.slayer.SlayerType;
 import at.kaiser.slayers.world.BossState;
+import at.kaiser.slayers.world.Boxes;
 import at.kaiser.slayers.world.Highlights;
 import at.kaiser.slayers.world.Tracers;
 import at.kaiser.slayers.world.WorldBeams;
@@ -47,6 +48,8 @@ public class KsClientGameTest implements FabricClientGameTest {
 					BossState st = KaisersSlayers.scanner().state();
 					st.entityId = zombie.getId();
 					Highlights.set(husk != null ? Map.of(zombie.getId(), 0xAA00FF, husk.getId(), 0x5555FF) : Map.of(zombie.getId(), 0xAA00FF));
+					Boxes.set(List.of(Boxes.Box.head(zombie.getId(), 0x39FF14),
+							Boxes.Box.block((int) Math.floor(zombie.getX()) - 2, (int) Math.floor(zombie.getY()), (int) Math.floor(zombie.getZ()) + 1, 0x39FF14)));
 					WorldBeams.set(List.of(new WorldBeams.Beam((int) zombie.getX() + 3, (int) zombie.getY(), (int) zombie.getZ() + 2, 0x55FFFF)));
 				}
 				AlertOverlay.show("§c§lBOSS SPAWNED!", "§5Voidgloom Seraph IV", 60_000);
